@@ -98,6 +98,14 @@ body {
     color: #1e3a8a;
 }
 
+.product-card .description {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 0.75rem;
+    line-height: 1.4;
+    min-height: 2.8rem;
+}
+
 .product-card .price {
     font-size: 1.25rem;
     font-weight: 700;

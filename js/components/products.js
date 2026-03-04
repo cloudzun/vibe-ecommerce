@@ -23,11 +23,16 @@ const ProductsPage = {
     },
 
     renderCard(product) {
+        const shortDesc = product.description.length > 60 
+            ? product.description.substring(0, 60) + '...' 
+            : product.description;
+        
         return `
             <div class="product-card">
                 <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
                 <div class="product-card-body">
                     <h3>${escapeHtml(product.name)}</h3>
+                    <p class="description">${escapeHtml(shortDesc)}</p>
                     <div class="rating">${'★'.repeat(Math.floor(product.rating))}${'☆'.repeat(5 - Math.floor(product.rating))}</div>
                     <p class="price">$${product.price.toFixed(2)}</p>
                     <button class="btn" onclick="ProductsPage.addToCart(${product.id})">

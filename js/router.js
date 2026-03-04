@@ -14,12 +14,28 @@ const Router = {
         
         this.currentRoute = { route, params };
         
-        const handler = this.routes[route] || this.routes['products'];
+        const handler = this.routes[route];
         if (handler) {
             handler(params);
+        } else if (route === '404') {
+            this.showNotFound();
+        } else {
+            this.showNotFound();
         }
         
         window.dispatchEvent(new CustomEvent('routeChange', { detail: { route, params } }));
+    },
+
+    showNotFound() {
+        document.getElementById('app').innerHTML = `
+            <div class="empty-state">
+                <h2>Page Not Found</h2>
+                <p style="margin: 1rem 0; color: #6b7280;">The page you're looking for doesn't exist.</p>
+                <button class="btn" style="width: auto;" onclick="Router.goTo('products')">
+                    Back to Products
+                </button>
+            </div>
+        `;
     },
 
     parseParams(hash) {

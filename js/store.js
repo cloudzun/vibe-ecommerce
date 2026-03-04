@@ -1,13 +1,23 @@
 const CartStore = {
     STORAGE_KEY: 'techshop_cart',
+    inMemoryCart: null,
 
     getCart() {
-        const data = localStorage.getItem(this.STORAGE_KEY);
-        return data ? JSON.parse(data) : [];
+        try {
+            const data = localStorage.getItem(this.STORAGE_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) {
+            if (!this.inMemoryCart) this.inMemoryCart = [];
+            return this.inMemoryCart;
+        }
     },
 
     saveCart(cart) {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(cart));
+        try {
+            localStorage.setItem(this.STORAGE_KEY, JSON.stringify(cart));
+        } catch (e) {
+            this.inMemoryCart = cart;
+        }
         this.notifyListeners();
     },
 

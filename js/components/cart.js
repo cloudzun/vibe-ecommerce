@@ -54,7 +54,7 @@ const CartPage = {
     },
 
     updateQuantity(productId, quantity) {
-        CartStore.updateQuantity(productId, quantity);
+        CartStore.updateQuantity(productId, Math.max(1, quantity));
     },
 
     removeItem(productId) {

@@ -40,7 +40,7 @@ const CheckoutPage = {
                     <h3>Order Summary</h3>
                     ${cart.map(item => `
                         <div class="order-item">
-                            <span>${item.name} x${item.quantity}</span>
+                            <span>${escapeHtml(item.name)} x${item.quantity}</span>
                             <span>$${(item.price * item.quantity).toFixed(2)}</span>
                         </div>
                     `).join('')}
@@ -85,13 +85,13 @@ const CheckoutPage = {
             <div class="success-message">
                 <h2>✓ Order Placed Successfully!</h2>
                 <p style="font-size: 1.1rem; color: #6b7280; margin-bottom: 1rem;">
-                    Thank you for your purchase, ${order.name}!
+                    Thank you for your purchase, ${escapeHtml(order.name)}!
                 </p>
                 <p style="color: #6b7280;">
                     Order total: <strong>$${order.total.toFixed(2)}</strong>
                 </p>
                 <p style="color: #6b7280; margin-top: 1rem;">
-                    A confirmation email has been sent to ${order.email}
+                    A confirmation email has been sent to ${escapeHtml(order.email)}
                 </p>
                 <button class="btn" style="width: auto; margin-top: 2rem;" onclick="Router.goTo('products')">
                     Continue Shopping

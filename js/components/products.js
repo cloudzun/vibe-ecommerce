@@ -25,9 +25,9 @@ const ProductsPage = {
     renderCard(product) {
         return `
             <div class="product-card">
-                <img src="${product.image}" alt="${product.name}">
+                <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
                 <div class="product-card-body">
-                    <h3>${product.name}</h3>
+                    <h3>${escapeHtml(product.name)}</h3>
                     <div class="rating">${'★'.repeat(Math.floor(product.rating))}${'☆'.repeat(5 - Math.floor(product.rating))}</div>
                     <p class="price">$${product.price.toFixed(2)}</p>
                     <button class="btn" onclick="ProductsPage.addToCart(${product.id})">

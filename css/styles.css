@@ -138,6 +138,43 @@ body {
     color: #374151;
 }
 
+/* Search & Sort bar */
+.search-sort-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.search-input {
+    flex: 1;
+    min-width: 200px;
+    padding: 0.6rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.search-input:focus {
+    border-color: #3b82f6;
+}
+
+.sort-select {
+    padding: 0.6rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: white;
+    cursor: pointer;
+    outline: none;
+}
+
+.sort-select:focus {
+    border-color: #3b82f6;
+}
+
 /* Filter */
 .filter-bar {
     margin-bottom: 2rem;
@@ -310,6 +347,84 @@ body {
     justify-content: space-between;
     padding: 0.5rem 0;
     border-bottom: 1px solid #e5e7eb;
+}
+
+/* Order Confirmation Page */
+.order-confirmation {
+    max-width: 640px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    text-align: center;
+}
+
+.order-success-icon {
+    width: 64px;
+    height: 64px;
+    background: #059669;
+    color: white;
+    border-radius: 50%;
+    font-size: 2rem;
+    line-height: 64px;
+    margin: 0 auto 1.5rem;
+}
+
+.order-confirmation h2 {
+    color: #059669;
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.order-id {
+    font-size: 0.9rem;
+    color: #6b7280;
+    font-family: monospace;
+    margin-bottom: 0.5rem;
+}
+
+.order-meta {
+    color: #6b7280;
+    margin-bottom: 2rem;
+}
+
+.order-summary {
+    background: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: left;
+    margin-top: 1.5rem;
+}
+
+.order-summary h3 {
+    color: #1e3a8a;
+    margin-bottom: 1rem;
+}
+
+.order-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.order-table th {
+    text-align: left;
+    padding: 0.5rem 0;
+    border-bottom: 2px solid #e5e7eb;
+    color: #374151;
+}
+
+.order-table td {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.order-table tfoot td {
+    border-bottom: none;
+    border-top: 2px solid #3b82f6;
+    padding-top: 0.75rem;
+    color: #1e3a8a;
 }
 
 /* Success message */

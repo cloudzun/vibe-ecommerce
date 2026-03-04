@@ -67,7 +67,7 @@ const PRODUCTS = [
         name: "Mechanical Keyboard",
         category: "gaming",
         price: 89.99,
-        image: "https://images.unsplash.com/photo-1595225476933-0efccddccd47?w=400&h=300&fit=crop",
+        image: "https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=400&h=300&fit=crop",
         description: "Compact mechanical keyboard with blue switches and RGB backlighting.",
         rating: 4.6
     },

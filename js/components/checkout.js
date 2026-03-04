@@ -59,45 +59,32 @@ const CheckoutPage = {
 
     handleSubmit(event) {
         event.preventDefault();
-        
+
         const form = event.target;
         const formData = new FormData(form);
-        
+
+        // 生成订单号：时间戳 + 随机4位
+        const orderId = 'ORD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
+
         const order = {
+            id: orderId,
             name: formData.get('name'),
             email: formData.get('email'),
             address: formData.get('address'),
-            cardNumber: formData.get('cardNumber'),
             items: CartStore.getCart(),
             total: CartStore.getCartTotal(),
             date: new Date().toISOString()
         };
 
-        console.log('Order placed:', order);
-        
-        CartStore.clearCart();
-        
-        this.showSuccess(order);
-    },
+        // 保存到 sessionStorage 供确认页读取
+        try {
+            sessionStorage.setItem('lastOrder', JSON.stringify(order));
+        } catch (e) {
+            // sessionStorage 不可用时降级：直接在页面显示
+        }
 
-    showSuccess(order) {
-        document.getElementById('app').innerHTML = `
-            <div class="success-message">
-                <h2>✓ Order Placed Successfully!</h2>
-                <p style="font-size: 1.1rem; color: #6b7280; margin-bottom: 1rem;">
-                    Thank you for your purchase, ${escapeHtml(order.name)}!
-                </p>
-                <p style="color: #6b7280;">
-                    Order total: <strong>$${order.total.toFixed(2)}</strong>
-                </p>
-                <p style="color: #6b7280; margin-top: 1rem;">
-                    A confirmation email has been sent to ${escapeHtml(order.email)}
-                </p>
-                <button class="btn" style="width: auto; margin-top: 2rem;" onclick="Router.goTo('products')">
-                    Continue Shopping
-                </button>
-            </div>
-        `;
+        CartStore.clearCart();
+        Router.goTo('order-confirmation');
     }
 };
 

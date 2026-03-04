@@ -1,13 +1,44 @@
 const ProductsPage = {
     currentCategory: 'all',
+    searchQuery: '',
+    sortOrder: 'default',
 
-    render() {
-        const categories = CATEGORIES;
-        const filteredProducts = this.currentCategory === 'all'
+    getFilteredProducts() {
+        let products = this.currentCategory === 'all'
             ? PRODUCTS
             : PRODUCTS.filter(p => p.category === this.currentCategory);
 
+        if (this.searchQuery) {
+            const q = this.searchQuery.toLowerCase();
+            products = products.filter(p => p.name.toLowerCase().includes(q));
+        }
+
+        if (this.sortOrder === 'price-asc') {
+            products = [...products].sort((a, b) => a.price - b.price);
+        } else if (this.sortOrder === 'price-desc') {
+            products = [...products].sort((a, b) => b.price - a.price);
+        } else if (this.sortOrder === 'rating-desc') {
+            products = [...products].sort((a, b) => b.rating - a.rating);
+        }
+
+        return products;
+    },
+
+    render() {
+        const categories = CATEGORIES;
+        const filteredProducts = this.getFilteredProducts();
+
         return `
+            <div class="search-sort-bar">
+                <input type="text" class="search-input" placeholder="Search products..." 
+                       value="${escapeHtml(this.searchQuery)}" id="searchInput">
+                <select class="sort-select" id="sortSelect">
+                    <option value="default" ${this.sortOrder === 'default' ? 'selected' : ''}>Default</option>
+                    <option value="price-asc" ${this.sortOrder === 'price-asc' ? 'selected' : ''}>Price: Low → High</option>
+                    <option value="price-desc" ${this.sortOrder === 'price-desc' ? 'selected' : ''}>Price: High → Low</option>
+                    <option value="rating-desc" ${this.sortOrder === 'rating-desc' ? 'selected' : ''}>Top Rated</option>
+                </select>
+            </div>
             <div class="filter-bar">
                 ${categories.map(cat => `
                     <button class="filter-btn ${this.currentCategory === cat ? 'active' : ''}" 
@@ -17,7 +48,10 @@ const ProductsPage = {
                 `).join('')}
             </div>
             <div class="products-grid">
-                ${filteredProducts.map(product => this.renderCard(product)).join('')}
+                ${filteredProducts.length > 0 
+                    ? filteredProducts.map(product => this.renderCard(product)).join('')
+                    : '<p class="empty-state">No products found.</p>'
+                }
             </div>
         `;
     },
@@ -28,14 +62,14 @@ const ProductsPage = {
             : product.description;
         
         return `
-            <div class="product-card">
+            <div class="product-card" onclick="Router.goTo('product-detail', {id: ${product.id}})" style="cursor:pointer;">
                 <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
                 <div class="product-card-body">
                     <h3>${escapeHtml(product.name)}</h3>
                     <p class="description">${escapeHtml(shortDesc)}</p>
                     <div class="rating">${'★'.repeat(Math.floor(product.rating))}${'☆'.repeat(5 - Math.floor(product.rating))}</div>
                     <p class="price">$${product.price.toFixed(2)}</p>
-                    <button class="btn" onclick="ProductsPage.addToCart(${product.id})">
+                    <button class="btn" onclick="event.stopPropagation(); ProductsPage.addToCart(${product.id})">
                         Add to Cart
                     </button>
                 </div>
@@ -55,6 +89,22 @@ const ProductsPage = {
                 this.mount();
             });
         });
+
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                this.searchQuery = e.target.value;
+                this.mount();
+            });
+        }
+
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                this.sortOrder = e.target.value;
+                this.mount();
+            });
+        }
     },
 
     addToCart(productId) {

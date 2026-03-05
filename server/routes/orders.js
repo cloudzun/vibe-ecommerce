@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const router = express.Router();
 const { knex } = require('../db');
 
@@ -15,10 +16,20 @@ router.post('/', async (req, res) => {
       return res.status(400).json({ success: false, error: 'Invalid total' });
     }
 
+    // 可选：从 Authorization header 读取 user_id（登录用户）
+    let user_id = null;
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith('Bearer ')) {
+      try {
+        const payload = jwt.verify(auth.slice(7), process.env.JWT_SECRET);
+        user_id = payload.id;
+      } catch (e) { /* 游客订单，忽略 */ }
+    }
+
     const orderId = 'ORD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
 
     await knex.transaction(async trx => {
-      await trx('orders').insert({ id: orderId, name, email, address, total });
+      await trx('orders').insert({ id: orderId, name, email, address, total, user_id });
       await trx('order_items').insert(
         items.map(item => ({
           order_id: orderId,

@@ -18,11 +18,11 @@ const CheckoutPage = {
                 <div>
                     <div class="form-group">
                         <label>Full Name *</label>
-                        <input type="text" name="name" required placeholder="John Doe">
+                        <input type="text" name="name" required placeholder="John Doe" value="${escapeHtml(AuthService.isLoggedIn() ? (AuthService.getUser().email.split('@')[0]) : '')}">
                     </div>
                     <div class="form-group">
                         <label>Email *</label>
-                        <input type="email" name="email" required placeholder="john@example.com">
+                        <input type="email" name="email" required placeholder="john@example.com" value="${escapeHtml(AuthService.isLoggedIn() ? AuthService.getUser().email : '')}">
                     </div>
                     <div class="form-group full-width">
                         <label>Shipping Address *</label>
@@ -75,8 +75,11 @@ const CheckoutPage = {
             total: CartStore.getCartTotal()
         };
 
+        // 登录用户：在请求头带 token，后端关联 user_id
+        const token = AuthService.getToken();
+
         try {
-            const result = await OrderAPI.create(order);
+            const result = await OrderAPI.create(order, token);
             CartStore.clearCart();
             // 把 orderId 存到 sessionStorage 供确认页读取
             sessionStorage.setItem('lastOrderId', result.orderId);

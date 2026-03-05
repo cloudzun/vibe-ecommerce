@@ -65,6 +65,27 @@ async function initDb() {
     });
     console.log('✅ Order items table created');
   }
+
+  // Users table (Phase 4)
+  const hasUsers = await knex.schema.hasTable('users');
+  if (!hasUsers) {
+    await knex.schema.createTable('users', t => {
+      t.increments('id');
+      t.string('email').unique().notNullable();
+      t.string('password_hash').notNullable();
+      t.timestamp('created_at').defaultTo(knex.fn.now());
+    });
+    console.log('✅ Users table created');
+  }
+
+  // Add user_id to orders (Phase 4, nullable for backward compat)
+  const hasUserId = await knex.schema.hasColumn('orders', 'user_id');
+  if (!hasUserId) {
+    await knex.schema.table('orders', t => {
+      t.integer('user_id').references('id').inTable('users').nullable();
+    });
+    console.log('✅ orders.user_id column added');
+  }
 }
 
 module.exports = { knex, initDb };

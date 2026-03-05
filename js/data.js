@@ -25,10 +25,13 @@ const ProductAPI = {
 };
 
 const OrderAPI = {
-    async create(order) {
+    async create(order, token = null) {
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
         const res = await fetch(`${API_BASE}/api/orders`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
+            credentials: 'include',
             body: JSON.stringify(order)
         });
         if (!res.ok) throw new Error('Failed to create order');

@@ -144,7 +144,7 @@ CREATE TABLE order_items (
 
 ---
 
-## Phase 4 — User Authentication 🔜
+## Phase 4 — User Authentication ✅
 
 **Goal**: Users can register, log in, and see their order history.
 
@@ -184,12 +184,26 @@ ALTER TABLE orders ADD COLUMN user_id INTEGER REFERENCES users(id);
 - Cart: migrate to server-side when logged in (localStorage for guests)
 
 **Security requirements** (Gate 5 checklist):
-- [ ] Passwords never stored or logged in plaintext
-- [ ] JWT secret in environment variable, not in code
-- [ ] All authenticated endpoints validate token on every request
-- [ ] Refresh tokens invalidated on logout
-- [ ] Rate limiting on `/api/auth/login` (prevent brute force)
-- [ ] CORS restricted to known frontend origin
+- [x] Passwords never stored or logged in plaintext (bcrypt cost 12)
+- [x] JWT secret in environment variable via pm2 ecosystem.config.js
+- [x] All authenticated endpoints validate token on every request
+- [x] Refresh tokens invalidated on logout (cookie cleared)
+- [x] Rate limiting on `/api/auth/login` and `/api/auth/register` (10 req/15min)
+- [x] CORS restricted to known frontend origin
+
+**Delivered**:
+- `server/routes/auth.js` — register / login / refresh / logout
+- `server/middleware/auth.js` — JWT verifyToken middleware
+- `server/routes/users.js` — GET /api/users/me/orders
+- `server/ecosystem.config.js` — pm2 env config with JWT_SECRET
+- `js/auth.js` — AuthService (token storage, login, logout, getOrders)
+- `js/components/login.js` — #login page
+- `js/components/register.js` — #register page (auto-login after register)
+- `js/components/account.js` — #account order history page
+- Guest orders remain valid (user_id = NULL, backward compatible)
+- 15/15 acceptance tests passed
+
+**Context document**: [`docs/briefs/2026-03-05-phase4-auth.md`](briefs/2026-03-05-phase4-auth.md)
 
 ---
 
@@ -259,5 +273,7 @@ Key architectural decisions and their rationale, for future reference:
 | Process manager | pm2 + systemd | Auto-restart, log management | — |
 | Reverse proxy | Nginx Proxy Manager (Docker) | Already running, Web UI, auto SSL | — |
 | API domain | shop-api.huaqloud.com | Dedicated subdomain, clean separation | — |
-| Auth | JWT | Stateless, standard | Phase 4 |
+| Auth | JWT (access 15min + refresh 7d httpOnly cookie) | Stateless; refresh cookie prevents XSS token theft | ✅ Done |
+| Password hashing | bcrypt cost 12 | Industry standard, tuned for ~100ms hash time | — |
+| Rate limiting scope | login + register only (not refresh/logout) | refresh/logout are low-risk; over-limiting breaks UX | ✅ Done |
 | Deployment | Vercel (frontend) + Linux (backend) | No Vercel serverless costs | — |

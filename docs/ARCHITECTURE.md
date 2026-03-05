@@ -247,18 +247,85 @@ try/catch on all localStorage operations — `SecurityError` in private/incognit
 
 ---
 
+## Phase 4: Authentication Layer
+
+### `js/auth.js` — AuthService
+
+Client-side auth utility. Manages token lifecycle:
+
+```javascript
+AuthService.register(email, password)   // POST /api/auth/register
+AuthService.login(email, password)      // POST /api/auth/login → stores token + user
+AuthService.logout()                    // POST /api/auth/logout → clears cookie + localStorage
+AuthService.isLoggedIn()                // → boolean
+AuthService.getToken()                  // → accessToken string
+AuthService.getUser()                   // → { id, email }
+AuthService.getOrders()                 // GET /api/users/me/orders (with Bearer token)
+```
+
+**Token storage**: accessToken in localStorage, refreshToken in httpOnly cookie (set by server). Frontend never reads the refresh token.
+
+### `server/routes/auth.js` — Auth Routes
+
+```
+POST /api/auth/register   → bcrypt hash → INSERT users
+POST /api/auth/login      → bcrypt compare → JWT access (15min) + refresh cookie (7d)
+POST /api/auth/refresh    → verify cookie → new accessToken
+POST /api/auth/logout     → clearCookie
+```
+
+Rate limited: 10 req/15min on `/login` and `/register` only.
+
+### `server/middleware/auth.js` — JWT Middleware
+
+Reads `Authorization: Bearer <token>`, verifies with `JWT_SECRET`, attaches `req.user = { id, email }`.
+
+### `server/routes/users.js` — User Routes
+
+```
+GET /api/users/me/orders  → verifyToken → orders WHERE user_id = req.user.id (with items)
+```
+
+### Auth Data Flow
+
+```
+Register:
+  RegisterPage → AuthService.register() → POST /api/auth/register
+  → auto-login → AuthService.login() → POST /api/auth/login
+  → { accessToken, user } stored → Router.goTo('account')
+
+Login:
+  LoginPage → AuthService.login() → POST /api/auth/login
+  → accessToken → localStorage
+  → refreshToken → httpOnly cookie (server-set)
+  → user { id, email } → localStorage
+  → HeaderComponent.render() → shows username
+
+Checkout (logged-in):
+  CheckoutPage → OrderAPI.create(order, token)
+  → POST /api/orders with Authorization header
+  → server reads token → user_id attached to order
+
+Order History:
+  AccountPage → AuthService.getOrders()
+  → GET /api/users/me/orders with Bearer token
+  → renders order list with items
+```
+
+---
+
 ## Known Technical Debt
 
 | Item | Location | Phase to Fix |
 |------|----------|-------------|
-| Cart state is client-only (localStorage) | `js/store.js` | Phase 4 |
-| No API authentication | `server/app.js` | Phase 4 |
-| No real payment processing | `js/components/checkout.js` | Phase 4+ |
-| No user authentication | — | Phase 4 |
-| No rate limiting | `server/app.js` | Phase 5 |
+| Cart state is client-only (localStorage) | `js/store.js` | Phase 5+ (server-side cart for logged-in users) |
+| No password reset flow | `server/routes/auth.js` | Phase 5 |
+| No email verification | `server/routes/auth.js` | Phase 5 |
+| No real payment processing | `js/components/checkout.js` | Phase 5+ |
+| No rate limiting on other endpoints | `server/app.js` | Phase 5 |
 | No input sanitization library | `server/routes/` | Phase 5 |
 | iptables rule not persisted via ufw | `/etc/network/if-up.d/` | Phase 5/6 |
-| No unit/integration tests | — | Phase 3+ |
+| No unit/integration tests | — | Phase 5+ |
 | Images are external CDN links | SQLite `products` table | Phase 5 |
 | No image lazy loading | `css/styles.css` | Phase 5 |
 | `server/node_modules/` in git history | git | Accepted debt (can't rewrite history safely) |

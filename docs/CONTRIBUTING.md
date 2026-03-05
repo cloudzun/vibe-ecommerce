@@ -1,138 +1,202 @@
 # Contributing
 
-This project follows a structured workflow designed for AI-assisted development. Whether you're contributing code or reviewing, this document explains the process.
+This project follows a structured workflow designed for AI-assisted development with a clear Architect / Executor separation.
 
 ---
 
-## Development Workflow
+## Role Definitions
 
-Every change — no matter how small — follows this sequence:
+### Architect (HuaQloud)
+Owns the **what** and **how**:
+- Reads and interprets Superpowers skills as reference material
+- Writes BRIEF and implementation plan before any code is written
+- Translates plans into precise OpenCode prompts
+- Monitors OpenCode execution and intervenes when off-track
+- Reviews all output for correctness, security, and spec compliance
+- Makes all architectural decisions
+- Updates documentation and ROADMAP after each phase
 
-```
-1. Write Context Document (BRIEF)
-2. Generate Implementation Plan
-3. Execute (with per-task verification)
-4. Structural Check
-5. Spec Review
-6. Code Quality Review
-7. Fix & Verify
-8. Deploy
-```
+**Does NOT**: write production code directly (except critical security issues)
 
-For small changes (single file, clear scope, no security impact), steps 1-2 can be skipped. Steps 5-6 are never skipped for anything touching user input or external data.
+### Executor (OpenCode)
+Owns the **doing**:
+- Receives precise task prompts from Architect
+- Creates/modifies only the files listed in the prompt
+- Does NOT trigger skills autonomously
+- Does NOT re-plan or re-architect
+- Reports: what was done, which files changed, any blockers
+
+**Does NOT**: make architectural decisions, trigger skill chains, deviate from the task spec
 
 ---
 
-## Context Document (BRIEF)
+## Superpowers Skills — How We Use Them
 
-Before writing any code, create `docs/briefs/YYYY-MM-DD-<feature>.md`:
+Superpowers skills (`~/.config/opencode/superpowers/skills/`) are **Architect reference material**, not OpenCode automation triggers.
+
+| Skill | How Architect uses it |
+|-------|-----------------------|
+| `writing-plans` | Architect reads it, then writes the plan manually (GATE 1) |
+| `subagent-driven-development` | Architect uses the parallel task decomposition pattern when designing the plan |
+| `systematic-debugging` | Architect uses the checklist when diagnosing issues |
+| `verification-before-completion` | Architect uses the checklist for GATE 3/4 |
+
+**Rule**: OpenCode prompts must include this header to prevent autonomous skill triggering:
+```
+【执行约束】
+- 不要触发任何 skill
+- 不要重新规划，直接执行以下任务
+- 只创建/修改以下指定文件：[列表]
+- 完成后汇报：做了什么、改了哪些文件、有什么注意事项
+```
+
+---
+
+## Development Workflow (7 Gates)
+
+Every phase follows this sequence. Gates are never skipped.
+
+```
+GATE 0 → BRIEF confirmed by user
+GATE 1 → Implementation plan written by Architect
+GATE 2 → OpenCode executes (Architect monitors)
+GATE 3 → Service restart + smoke test
+GATE 4 → Functional acceptance (all test cases pass)
+GATE 5 → Security review
+GATE 6 → Documentation updated (ROADMAP, ARCHITECTURE, CONTRIBUTING)
+GATE 7 → Deployment verified
+```
+
+### GATE 0 — BRIEF
+Create `docs/briefs/YYYY-MM-DD-<feature>.md`:
 
 ```markdown
 ## Project Background
-[Current system state: what exists, what works, what's broken]
+[Current system state]
 
 ## What Was Tried Before
-[Previous phase outcomes, known issues, existing technical debt]
+[Previous outcomes, known issues, existing debt]
 
 ## Definition of Done / Failure
 - Success: [measurable criteria]
 - Failure lines: [things that must not break]
 
 ## Who Is Affected
-- Affected modules: [list]
-- Regression test scope: [what to re-verify]
+- New files: [list]
+- Modified files: [list]
+- Untouched files: [list — equally important]
 
 ## Constraints
-- Tech constraints: [language, framework, interfaces that can't change]
-- Quality constraints: [performance targets, security requirements]
+[Tech, security, backward-compat constraints]
 ```
 
-**Why this matters**: The BRIEF is not just for you — it becomes the prompt context for OpenCode. A well-written BRIEF produces significantly better AI output than an ad-hoc prompt.
+### GATE 1 — Implementation Plan
+Create `docs/plans/YYYY-MM-DD-<feature>.md`.
+
+Each task:
+```markdown
+## Task N: <verb + noun>
+- Input: [files/interfaces this depends on]
+- Output: [files created/modified]
+- Verification: [exact command to confirm]
+```
+
+Task size: 5–20 minutes each. Larger = split it.
+
+### GATE 2 — OpenCode Execution
+Architect writes the prompt. OpenCode executes.
+
+**If OpenCode deviates**:
+1. Kill the session immediately (`process action:kill`)
+2. Diagnose root cause (wrong context? skill triggered? ambiguous prompt?)
+3. Rewrite the prompt with tighter constraints
+4. Re-run OpenCode — do NOT take over the coding yourself
+
+**Monitoring**: check `process action:log` every 2–3 minutes. If output doesn't match expected files within 5 minutes, intervene.
+
+### GATE 3 — Smoke Test
+```bash
+# Restart service
+pm2 restart ecosystem.config.js --update-env
+
+# Verify health
+curl -s http://localhost:3001/health
+
+# Syntax check all new JS files
+node --check <file>
+```
+
+### GATE 4 — Functional Acceptance
+Run all test cases from the BRIEF's "Definition of Done". Every case must pass before proceeding.
+
+### GATE 5 — Security Review
+Checklist (non-negotiable):
+- [ ] No hardcoded secrets or API keys
+- [ ] All `innerHTML` uses `escapeHtml()`
+- [ ] All localStorage/sessionStorage access has try/catch
+- [ ] All URL params validated before use
+- [ ] Auth endpoints have rate limiting
+- [ ] JWT secret from environment variable only
+- [ ] CORS not wildcard
+
+### GATE 6 — Documentation
+After every phase:
+- [ ] `docs/ROADMAP.md` — phase status updated to ✅, Decision Log updated
+- [ ] `docs/ARCHITECTURE.md` — new modules/flows documented
+- [ ] `README.md` — status table and links updated
+- [ ] Retrospective written: `docs/retrospectives/YYYY-MM-DD-<phase>.md`
+
+### GATE 7 — Deployment
+```bash
+git add -A && git commit -m "feat: Phase N - <description>"
+git push origin master
+# Wait for Vercel deploy, then verify:
+curl -s -o /dev/null -w "%{http_code}" https://vibe-ecommerce-seven.vercel.app/js/<new-file>.js
+```
 
 ---
 
-## Implementation Plan
+## OpenCode Prompt Template
 
-After the BRIEF is confirmed, create `docs/plans/YYYY-MM-DD-<feature>.md`:
-
-```markdown
-## Task N: <verb + noun>
-- Input: which files/interfaces this depends on
-- Output: which files are created/modified
-- Verification: exact command or check to confirm completion
-- Estimated time: X minutes
 ```
+【执行约束】
+- 不要触发任何 skill
+- 不要重新规划，直接执行以下任务
+- 只创建/修改以下指定文件（其他文件不要动）：
+  - [新建] server/routes/xxx.js
+  - [修改] server/app.js（只加路由挂载，不改其他）
 
-**Task size rule**: Each task should take 2-5 minutes. If a task takes longer, split it.
+【项目上下文】
+- 项目位置：~/projects/vibe-ecommerce/
+- 现有文件不要重建，只做指定修改
+- 代码风格：CommonJS require()，无 TypeScript，无 ESM
 
-**Plan vs execution**: Plans are guidance, not contracts. If two tasks naturally merge during execution, merge them — but document why.
+【任务】
+[具体任务描述]
+
+【完成标准】
+- node --check 通过
+- [具体验证命令]
+
+【完成后汇报】
+做了什么、改了哪些文件、有什么注意事项
+```
 
 ---
 
 ## Code Standards
 
 ### Security (non-negotiable)
-
-- All `innerHTML` assignments must use `escapeHtml()` from `js/utils.js`
-- All localStorage/sessionStorage access must be wrapped in try/catch
-- All URL parameter IDs must be validated before use (`parseInt()` + `isNaN()` check)
-- No hardcoded secrets or API keys
+- All `innerHTML` → `escapeHtml()` from `js/utils.js`
+- All localStorage/sessionStorage → try/catch
+- All URL param IDs → `parseInt()` + `isNaN()` check
+- No hardcoded secrets
 
 ### JavaScript Style
-
 - No `var` — use `const` and `let`
-- No empty catch blocks — at minimum, log the error
-- No functions longer than 50 lines — split into smaller functions
-- Component files follow the pattern: `const XxxPage = { render(), mount(), ... }`
-
-### Comments
-
-Write comments that explain **why**, not **what**:
-
-```javascript
-// ❌ Bad: restates the code
-// Escape the product name to prevent XSS
-element.innerHTML = `<h3>${escapeHtml(product.name)}</h3>`;
-
-// ✅ Good: explains the constraint
-// escapeHtml() required — product names come from data.js but will
-// eventually come from user-submitted API data in Phase 3
-element.innerHTML = `<h3>${escapeHtml(product.name)}</h3>`;
-```
-
----
-
-## Verification Commands
-
-Run these before submitting a PR:
-
-```bash
-# Syntax check all JS files
-for f in js/**/*.js js/*.js; do node --check "$f" && echo "OK: $f"; done
-
-# Verify all components register their routes
-grep -c "Router.register" js/components/*.js
-
-# Verify escapeHtml is used wherever innerHTML is used
-grep -n "innerHTML" js/components/*.js | grep -v "escapeHtml"
-# ^ this should return nothing (all innerHTML uses escapeHtml)
-
-# Verify no hardcoded secrets
-grep -rn "api_key\|apiKey\|secret\|password" js/ --include="*.js"
-# ^ should return nothing sensitive
-```
-
----
-
-## Pull Request Checklist
-
-- [ ] Context document exists in `docs/briefs/`
-- [ ] Implementation plan exists in `docs/plans/`
-- [ ] All verification commands pass
-- [ ] No new `innerHTML` without `escapeHtml()`
-- [ ] No new localStorage access without try/catch
-- [ ] Technical decisions documented (in BRIEF, plan, or code comments)
-- [ ] `ROADMAP.md` Decision Log updated if a new architectural decision was made
+- No empty catch blocks — log the error
+- Component files: `const XxxPage = { render(), mount(), ... }`
+- CommonJS only — no ESM (`import`/`export`)
 
 ---
 
@@ -141,17 +205,9 @@ grep -rn "api_key\|apiKey\|secret\|password" js/ --include="*.js"
 | Directory | Purpose | Rule |
 |-----------|---------|------|
 | `js/components/` | Page components | One file per route; must call `Router.register()` |
-| `js/` (root) | Core modules | `data.js`, `store.js`, `router.js`, `utils.js`, `app.js` only |
-| `docs/briefs/` | Context documents | One per phase/feature, named `YYYY-MM-DD-<name>.md` |
-| `docs/plans/` | Implementation plans | One per phase/feature, same naming |
-| `docs/retrospectives/` | Phase retrospectives | Created at end of each phase |
-
----
-
-## Reporting Issues
-
-When filing an issue, include:
-1. **What you expected** to happen
-2. **What actually happened** (with browser console output if relevant)
-3. **Steps to reproduce**
-4. **Which phase** introduced the behavior (check git log)
+| `js/` (root) | Core modules | `data.js`, `store.js`, `router.js`, `utils.js`, `auth.js`, `app.js` only |
+| `server/routes/` | API route handlers | One file per resource |
+| `server/middleware/` | Express middleware | Auth, rate-limit, validation |
+| `docs/briefs/` | Context documents | `YYYY-MM-DD-<name>.md` |
+| `docs/plans/` | Implementation plans | `YYYY-MM-DD-<name>.md` |
+| `docs/retrospectives/` | Phase retrospectives | End of each phase |

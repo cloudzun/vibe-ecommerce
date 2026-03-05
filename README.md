@@ -23,7 +23,7 @@ Every architectural decision, quality gate, and iteration is recorded. The goal 
 | Phase 1 | ✅ Complete | Vibe Coding prototype — 927 lines, full shopping flow |
 | Phase 2 | ✅ Complete | Frontend polish — search, sort, card navigation, order confirmation |
 | Phase 3 | ✅ Complete | Backend API — Node.js + Express + SQLite, live at shop-api.huaqloud.com |
-| Phase 4 | 🔜 Planned | User auth — JWT, order history, permissions |
+| Phase 4 | ✅ Complete | User auth — JWT, register/login, order history |
 | Phase 5 | 🔜 Planned | Performance + security hardening |
 | Phase 6 | 🔜 Planned | SDD-driven refactor |
 

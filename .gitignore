@@ -1,1 +1,6 @@
 .vercel
+
+# Backend
+server/node_modules/
+server/data/shop.db
+server/.env

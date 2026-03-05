@@ -33,8 +33,11 @@ const authLimiter = rateLimit({
   message: { success: false, error: 'Too many requests, please try again later' }
 });
 
-// Routes
-app.use('/api/auth', authLimiter, require('./routes/auth'));
+// Routes — rate limit 只加在登录/注册，不限 refresh/logout
+const authRouter = require('./routes/auth');
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/auth', authRouter);
 app.use('/api/users', require('./routes/users'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/orders', require('./routes/orders'));

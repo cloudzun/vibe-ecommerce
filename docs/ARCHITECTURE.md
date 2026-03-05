@@ -6,30 +6,47 @@ Technical deep-dive into vibe-ecommerce's design decisions, module responsibilit
 
 ## Overview
 
-A single-page application (SPA) built with vanilla JavaScript. No framework, no build tools, no bundler. The entire app loads from `index.html` and runs in the browser.
+A full-stack single-page application (SPA). Frontend is vanilla JavaScript hosted on Vercel; backend is Node.js + Express + SQLite hosted on Azure Linux server.
 
 ```
-index.html
-  └── loads scripts in order:
-      data.js → utils.js → store.js → router.js
-      → components/* → app.js
+Vercel (Frontend)                    Azure Linux Server (Backend)
+index.html                           server/app.js (Express, port 3001)
+  └── loads scripts in order:          └── routes/products.js
+      data.js (API client)             └── routes/orders.js
+      utils.js → store.js              └── db.js (Knex + SQLite)
+      router.js → components/*
+      app.js
+```
+
+**Network path**:
+```
+Browser → https://shop-api.huaqloud.com (NPM Docker, port 443)
+        → iptables (172.17.0.0/16 → port 3001)
+        → Node.js Express (localhost:3001)
+        → SQLite (server/data/shop.db)
 ```
 
 ---
 
-## Module Responsibilities
+## Frontend Modules
 
-### `js/data.js` — Product Catalog
+### `js/data.js` — API Client
 
-Static product data. 10 electronics items with:
-- `id`, `name`, `category`, `price`, `image`, `description`, `rating`
+Exports two API clients that wrap all backend communication:
 
-**Current limitation**: hardcoded. Phase 3 will replace with API call.
+```javascript
+// Products
+ProductAPI.getAll({ category, search, sort })  // GET /api/products
+ProductAPI.getById(id)                          // GET /api/products/:id
 
-**Image strategy**: Unsplash CDN URLs with fixed dimensions (`?w=400&h=300&fit=crop`). Chosen over:
-- `picsum.photos` — random images, no semantic match to product names
-- Self-hosted — adds storage cost and maintenance
-- Placeholder SVGs — poor UX
+// Orders
+OrderAPI.create({ name, email, address, items, total })  // POST /api/orders
+OrderAPI.getById(id)                                      // GET /api/orders/:id
+```
+
+**API base**: `https://shop-api.huaqloud.com`
+
+**Phase 3 change**: Replaced hardcoded `PRODUCTS` array with async fetch calls. All components that previously read `PRODUCTS.find()` now call `await ProductAPI.getById()`.
 
 ---
 
@@ -39,45 +56,28 @@ Static product data. 10 electronics items with:
 function escapeHtml(str) { ... }
 ```
 
-**Why this exists**: All user-facing strings rendered via `innerHTML` must be escaped to prevent XSS. This was identified as a CRITICAL bug in Phase 1's code quality review and fixed before deployment.
-
-**Rule**: Every component that renders user-controlled data (product names, form inputs, order details) must call `escapeHtml()`. No exceptions.
+All user-facing strings rendered via `innerHTML` must pass through `escapeHtml()`. Identified as CRITICAL in Phase 1 code quality review. No exceptions.
 
 ---
 
 ### `js/store.js` — Cart State
 
-Single source of truth for cart state. API:
+Single source of truth for cart. localStorage with try/catch fallback (private/incognito mode throws `SecurityError`).
 
 ```javascript
 CartStore.addItem(product, quantity)
 CartStore.removeItem(productId)
 CartStore.updateQuantity(productId, quantity)
-CartStore.getCart()           // returns array of cart items
-CartStore.getCartTotal()      // returns number
+CartStore.getCart()        // → array
+CartStore.getCartTotal()   // → number
 CartStore.clearCart()
 ```
 
-**Persistence**: localStorage with try/catch fallback to in-memory array.
-
-```javascript
-// Why try/catch?
-// localStorage throws in private/incognito mode.
-// Without this, the entire app crashes on first load.
-try {
-    localStorage.setItem('cart', JSON.stringify(cart));
-} catch (e) {
-    inMemoryCart = cart; // graceful degradation
-}
-```
-
-**Phase 3 migration**: `CartStore` interface will remain identical. The implementation will switch from localStorage to API calls. Components won't need to change.
+**Phase 4 plan**: Interface stays identical. Implementation switches to server-side cart for authenticated users. Guest cart stays in localStorage.
 
 ---
 
 ### `js/router.js` — Hash-Based SPA Router
-
-Routes map to component `mount()` functions:
 
 ```
 #products                → ProductsPage.mount()
@@ -87,118 +87,163 @@ Routes map to component `mount()` functions:
 #order-confirmation      → OrderConfirmationPage.mount()
 ```
 
-**Why hash-based?**
-- Works without a server (can open `index.html` directly from filesystem)
-- No server-side routing configuration needed for Vercel deployment
-- Browser back/forward navigation works natively
-
-**404 handling**: Unknown routes render a "Page not found" state. This was missing in Phase 1 and added after the systematic debugging pass.
+Hash-based routing works without a server and requires no Vercel configuration. Browser back/forward works natively.
 
 ---
 
 ### `js/components/products.js` — Product Listing
 
-State managed within the component:
+Unified state for search + filter + sort:
 
 ```javascript
 const ProductsPage = {
     currentCategory: 'all',
-    searchQuery: '',
+    searchQuery: '',      // debounced 300ms before API call
     sortOrder: 'default',
-    ...
+    products: [],         // populated from API
 }
 ```
 
-**Why unified state?** Search, category filter, and sort all feed into a single `getFilteredProducts()` function, and `mount()` is the single render entry point. This prevents state desync bugs (e.g., "search clears when you change category").
+Single `fetchAndRender()` entry point — all state changes (search/filter/sort) go through the same path, preventing state desync. Search is debounced 300ms to avoid per-keystroke API calls.
 
-**Card click behavior**: The entire card is clickable (navigates to detail page). The "Add to Cart" button uses `event.stopPropagation()` to prevent the click from bubbling up to the card handler.
+Card click → product detail page. "Add to Cart" button uses `event.stopPropagation()` to prevent bubbling to card click handler.
 
 ---
 
 ### `js/components/checkout.js` + `js/components/order-confirmation.js`
 
-**Order data flow**:
+**Phase 3 order data flow** (replaced sessionStorage):
 
 ```
 CheckoutPage.handleSubmit()
-  → generates orderId (timestamp + random suffix)
-  → saves order to sessionStorage
-  → clears cart
+  → POST /api/orders → { orderId }
+  → sessionStorage.setItem('lastOrderId', orderId)
+  → CartStore.clearCart()
   → Router.goTo('order-confirmation')
 
 OrderConfirmationPage.mount()
-  → reads order from sessionStorage
-  → renders confirmation with order details
+  → orderId = sessionStorage.getItem('lastOrderId')
+  → GET /api/orders/:orderId → { order + items }
+  → renders confirmation
 ```
 
-**Why sessionStorage, not localStorage or URL params?**
-
-| Option | Problem |
-|--------|---------|
-| URL params | Order data exposed in browser history and server logs |
-| localStorage | Data persists indefinitely; semantically wrong for a one-time confirmation |
-| **sessionStorage** | Auto-clears when tab closes; matches "temporary view" semantics |
-
-**Phase 4 migration**: sessionStorage will be replaced by a real order API. The `orderId` format (`ORD-<timestamp>-<random>`) will be replaced by database-generated IDs.
+sessionStorage stores only the `orderId` (not the full order). Full order data comes from the API. This means order data persists correctly even if the page is refreshed.
 
 ---
 
-## Data Flow: Add to Cart
+## Backend Modules
 
-```
-User clicks "Add to Cart"
-  → ProductsPage.addToCart(productId)
-  → CartStore.addItem(product, 1)
-    → updates in-memory cart array
-    → persists to localStorage (with try/catch)
-  → HeaderComponent.updateCartBadge()
-    → reads CartStore.getCart().length
-    → updates badge number
-```
-
----
-
-## Data Flow: Checkout
-
-```
-User submits checkout form
-  → CheckoutPage.handleSubmit(event)
-  → validates: cart not empty (redirect if empty)
-  → generates orderId
-  → saves {id, name, email, items, total} to sessionStorage
-  → CartStore.clearCart()
-  → Router.goTo('order-confirmation')
-  → OrderConfirmationPage reads sessionStorage
-  → renders order summary table
-```
-
----
-
-## Security Decisions
-
-### XSS Prevention
-
-All `innerHTML` assignments use `escapeHtml()`:
+### `server/app.js` — Express Entry Point
 
 ```javascript
-// ❌ Vulnerable (Phase 1 original)
-element.innerHTML = `<h3>${product.name}</h3>`;
-
-// ✅ Fixed
-element.innerHTML = `<h3>${escapeHtml(product.name)}</h3>`;
+app.use(helmet())           // security headers
+app.use(cors({ origin: ['https://vibe-ecommerce-seven.vercel.app', ...] }))
+app.use(express.json())
+app.use('/api/products', require('./routes/products'))
+app.use('/api/orders', require('./routes/orders'))
+app.get('/health', ...)     // health check
 ```
 
-Affected locations: `products.js`, `product-detail.js`, `cart.js`, `checkout.js`, `order-confirmation.js`.
+CORS whitelist: Vercel frontend origin + localhost for dev. Not wildcard.
+
+---
+
+### `server/db.js` — Database Init
+
+Knex configured for `better-sqlite3`. Creates tables and seeds 10 products on first run.
+
+```javascript
+const knex = require('knex')({
+  client: 'better-sqlite3',
+  connection: { filename: './data/shop.db' }
+});
+```
+
+**Migration path to Azure SQL DB** (Phase 5/6): change `client` to `'mssql'` and `connection` to Azure credentials. All business logic in routes stays unchanged — Knex abstracts the dialect.
+
+---
+
+### `server/routes/products.js` — Product Routes
+
+```
+GET /api/products
+  ?category=audio          → WHERE category = 'audio'
+  ?search=head             → WHERE name ILIKE '%head%'
+  ?sort=price_asc          → ORDER BY price ASC
+  (combinable)
+
+GET /api/products/:id      → single product, 404 if not found
+```
+
+---
+
+### `server/routes/orders.js` — Order Routes
+
+```
+POST /api/orders
+  body: { name, email, address, items[], total }
+  → knex.transaction(): INSERT orders + INSERT order_items
+  → returns { orderId }
+
+GET /api/orders/:id
+  → JOIN order_items + products
+  → returns { order + items[] }
+```
+
+**Transaction**: order row and all order_items are inserted atomically. If items insert fails, order row is rolled back.
+
+**Snapshot price**: `order_items.price` stores the price at order time, not a foreign key to the current product price. Product prices can change; historical order totals must not.
+
+---
+
+## Data Flow: Full Purchase
+
+```
+1. ProductsPage loads
+   → ProductAPI.getAll() → GET /api/products
+   → renders product grid
+
+2. User clicks product card
+   → Router.goTo('product-detail', {id})
+   → ProductAPI.getById(id) → GET /api/products/:id
+   → renders detail page
+
+3. User adds to cart
+   → CartStore.addItem(product, quantity)
+   → persists to localStorage
+
+4. User submits checkout
+   → OrderAPI.create({name, email, address, items, total})
+   → POST /api/orders → { orderId }
+   → sessionStorage.setItem('lastOrderId', orderId)
+   → CartStore.clearCart()
+   → Router.goTo('order-confirmation')
+
+5. Order confirmation loads
+   → OrderAPI.getById(orderId) → GET /api/orders/:orderId
+   → renders order summary with items + total
+```
+
+---
+
+## Security
+
+### XSS Prevention
+All `innerHTML` assignments use `escapeHtml()`. No exceptions.
 
 ### Input Validation
+- URL param IDs: `parseInt()` + `isNaN()` check
+- Cart quantities: `Math.max(1, quantity)` — no negatives
+- Checkout form: HTML5 `required` + `type="email"` + card pattern
+- API body: required field checks + type validation before DB write
 
-- `productId` in URL params: validated with `parseInt()` + `isNaN()` check before lookup
-- Cart quantities: clamped with `Math.max(1, quantity)` — no negative quantities
-- Checkout form: HTML5 `required` + `type="email"` + `pattern` for card number
+### Network Security
+- Port 3001 not exposed to internet — iptables allows only Docker network (172.17.0.0/16)
+- HTTPS via NPM (Let's Encrypt auto-renewal)
+- `helmet()` sets security headers (CSP, HSTS, X-Frame-Options, etc.)
 
 ### localStorage Error Handling
-
-Private/incognito mode throws `SecurityError` on localStorage access. All read/write operations are wrapped in try/catch with in-memory fallback.
+try/catch on all localStorage operations — `SecurityError` in private/incognito mode falls back to in-memory array.
 
 ---
 
@@ -206,10 +251,14 @@ Private/incognito mode throws `SecurityError` on localStorage access. All read/w
 
 | Item | Location | Phase to Fix |
 |------|----------|-------------|
-| Product data is hardcoded | `js/data.js` | Phase 3 |
-| Cart state is client-only | `js/store.js` | Phase 3 |
+| Cart state is client-only (localStorage) | `js/store.js` | Phase 4 |
+| No API authentication | `server/app.js` | Phase 4 |
 | No real payment processing | `js/components/checkout.js` | Phase 4+ |
 | No user authentication | — | Phase 4 |
-| No unit tests | — | Phase 3+ |
-| Images are external CDN links | `js/data.js` | Phase 5 |
+| No rate limiting | `server/app.js` | Phase 5 |
+| No input sanitization library | `server/routes/` | Phase 5 |
+| iptables rule not persisted via ufw | `/etc/network/if-up.d/` | Phase 5/6 |
+| No unit/integration tests | — | Phase 3+ |
+| Images are external CDN links | SQLite `products` table | Phase 5 |
 | No image lazy loading | `css/styles.css` | Phase 5 |
+| `server/node_modules/` in git history | git | Accepted debt (can't rewrite history safely) |

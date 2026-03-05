@@ -3,6 +3,7 @@
 > A progressive e-commerce SPA built with vanilla JavaScript, evolving from a Vibe Coding prototype to a full-stack production app — documented at every step.
 
 **Live Demo**: https://vibe-ecommerce-seven.vercel.app  
+**API**: https://shop-api.huaqloud.com/api/products  
 **Blog Series**: https://blog.huaqloud.com/tags/vibe-coding/
 
 ---
@@ -21,7 +22,7 @@ Every architectural decision, quality gate, and iteration is recorded. The goal 
 |-------|--------|-------------|
 | Phase 1 | ✅ Complete | Vibe Coding prototype — 927 lines, full shopping flow |
 | Phase 2 | ✅ Complete | Frontend polish — search, sort, card navigation, order confirmation |
-| Phase 3 | 🔜 Planned | Backend API — Node.js + Express + SQLite |
+| Phase 3 | ✅ Complete | Backend API — Node.js + Express + SQLite, live at shop-api.huaqloud.com |
 | Phase 4 | 🔜 Planned | User auth — JWT, order history, permissions |
 | Phase 5 | 🔜 Planned | Performance + security hardening |
 | Phase 6 | 🔜 Planned | SDD-driven refactor |
@@ -104,6 +105,7 @@ vibe-ecommerce/
 | [Vibe Coding with OpenCode + Superpowers](https://blog.huaqloud.com/posts/2026-03-04-vibe-coding-opencode-superpowers/) | Phase 1 build process |
 | [Why You Need 7 Quality Gates](https://blog.huaqloud.com/posts/2026-03-04-vibe-coding-qa-gates/) | QA methodology |
 | [Iteration Series #1: Phase 2](https://blog.huaqloud.com/posts/2026-03-04-vibe-ecommerce-iteration-phase2/) | Planning framework + Phase 2 |
+| [Iteration Series #2: Phase 3](https://blog.huaqloud.com/posts/2026-03-05-vibe-ecommerce-phase3-backend/) | Backend intro — architecture + tech decisions |
 
 ---
 

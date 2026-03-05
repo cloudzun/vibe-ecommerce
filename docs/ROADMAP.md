@@ -69,7 +69,7 @@ Phase 5+
 
 ---
 
-## Phase 3 — Backend API 🔜
+## Phase 3 — Backend API ✅
 
 **Goal**: Replace hardcoded data with a real API. First server-side state.
 
@@ -131,7 +131,16 @@ CREATE TABLE order_items (
 );
 ```
 
-**Quality gates**: Spec review against Phase 3 BRIEF, security review (SQL injection, CORS config, input validation).
+**Delivered**:
+- `server/` — Express + Knex + SQLite backend (4 API endpoints)
+- `https://shop-api.huaqloud.com` — public HTTPS API via Nginx Proxy Manager
+- Frontend fully migrated to `fetch()` — no hardcoded product data
+- Checkout POSTs to API, order confirmation GETs from API
+- pm2 process management + systemd auto-start
+- iptables rule: Docker network → port 3001 only (not public)
+
+**Context document**: [`docs/briefs/2026-03-05-phase3-backend.md`](briefs/2026-03-05-phase3-backend.md)  
+**Retrospective**: [`docs/retrospectives/2026-03-05-phase3-retrospective.md`](retrospectives/2026-03-05-phase3-retrospective.md)
 
 ---
 
@@ -241,10 +250,14 @@ Key architectural decisions and their rationale, for future reference:
 | Decision | Choice | Reason | Revisit When |
 |----------|--------|--------|--------------|
 | Frontend framework | None (Vanilla JS) | Simplicity, no build tools | Phase 6 if complexity warrants |
-| Routing | Hash-based | Works without server | Phase 3 (consider history API) |
+| Routing | Hash-based | Works without server | Phase 5 (consider history API) |
 | Cart persistence | localStorage | No backend in Phase 1-2 | Phase 4 (server cart for logged-in users) |
-| Order temp storage | sessionStorage | Semantic match, auto-clears | Phase 3 (replace with order API) |
+| Order temp storage | ~~sessionStorage~~ → API (Phase 3) | Replaced with real order API | ✅ Done |
 | Backend runtime | Node.js | Same language as frontend | — |
-| Database | SQLite | Zero config, sufficient scale | Phase 5 if concurrent writes become an issue |
-| Auth | JWT | Stateless, standard | — |
+| Database | SQLite | Zero config; Knex abstracts dialect for future migration | Phase 5/6 → Azure SQL DB |
+| Query builder | Knex.js | SQLite + MSSQL dialect — migration = config change only | — |
+| Process manager | pm2 + systemd | Auto-restart, log management | — |
+| Reverse proxy | Nginx Proxy Manager (Docker) | Already running, Web UI, auto SSL | — |
+| API domain | shop-api.huaqloud.com | Dedicated subdomain, clean separation | — |
+| Auth | JWT | Stateless, standard | Phase 4 |
 | Deployment | Vercel (frontend) + Linux (backend) | No Vercel serverless costs | — |

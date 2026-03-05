@@ -1,18 +1,28 @@
 const ProductDetailPage = {
     quantity: 1,
+    product: null,
 
-    render(productId) {
-        const id = parseInt(productId);
-        if (!productId || isNaN(id)) {
-            return '<div class="empty-state"><h2>Product not found</h2><button class="btn" style="margin-top: 1rem;" onclick="Router.goTo(\'products\')">Back to Products</button></div>';
-        }
-        
-        const product = PRODUCTS.find(p => p.id === id);
-        
-        if (!product) {
-            return '<div class="empty-state"><h2>Product not found</h2><button class="btn" style="margin-top: 1rem;" onclick="Router.goTo(\'products\')">Back to Products</button></div>';
+    async mount(params) {
+        this.quantity = 1;
+        this.product = null;
+        document.getElementById('app').innerHTML = '<p class="empty-state">Loading...</p>';
+
+        const id = parseInt(params && params.id);
+        if (!id || isNaN(id)) {
+            document.getElementById('app').innerHTML = this.renderNotFound();
+            return;
         }
 
+        try {
+            this.product = await ProductAPI.getById(id);
+            document.getElementById('app').innerHTML = this.render();
+        } catch (e) {
+            document.getElementById('app').innerHTML = this.renderNotFound();
+        }
+    },
+
+    render() {
+        const product = this.product;
         return `
             <div class="product-detail">
                 <div class="product-image">
@@ -28,34 +38,26 @@ const ProductDetailPage = {
                         <span>${this.quantity}</span>
                         <button onclick="ProductDetailPage.changeQuantity(1)">+</button>
                     </div>
-                    <button class="btn" onclick="ProductDetailPage.addToCart(${product.id})">
-                        Add to Cart
-                    </button>
-                    <button class="btn btn-secondary" style="margin-top: 1rem;" onclick="Router.goTo('products')">
-                        ← Back to Products
-                    </button>
+                    <button class="btn" onclick="ProductDetailPage.addToCart()">Add to Cart</button>
+                    <button class="btn btn-secondary" style="margin-top:1rem" onclick="Router.goTo('products')">← Back</button>
                 </div>
             </div>
         `;
     },
 
-    mount(params) {
-        this.quantity = 1;
-        document.getElementById('app').innerHTML = this.render(params.id);
+    renderNotFound() {
+        return `<div class="empty-state"><h2>Product not found</h2>
+            <button class="btn" style="margin-top:1rem" onclick="Router.goTo('products')">Back to Products</button></div>`;
     },
 
     changeQuantity(delta) {
         this.quantity = Math.max(1, this.quantity + delta);
-        this.mount(Router.currentRoute.params);
+        if (this.product) document.getElementById('app').innerHTML = this.render();
     },
 
-    addToCart(productId) {
-        const product = PRODUCTS.find(p => p.id === productId);
-        if (!product) {
-            ProductsPage.showNotification('Product not found');
-            return;
-        }
-        CartStore.addItem(product, this.quantity);
+    addToCart() {
+        if (!this.product) return;
+        CartStore.addItem(this.product, this.quantity);
         ProductsPage.showNotification('Added to cart!');
     }
 };

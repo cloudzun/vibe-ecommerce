@@ -1,21 +1,19 @@
 const CheckoutPage = {
+    submitting: false,
+
     render() {
         const cart = CartStore.getCart();
         const total = CartStore.getCartTotal();
 
         if (cart.length === 0) {
-            return `
-                <div class="empty-state">
-                    <h2>Your cart is empty</h2>
-                    <button class="btn" style="width: auto;" onclick="Router.goTo('products')">
-                        Browse Products
-                    </button>
-                </div>
-            `;
+            return `<div class="empty-state">
+                <h2>Your cart is empty</h2>
+                <button class="btn" style="width:auto" onclick="Router.goTo('products')">Browse Products</button>
+            </div>`;
         }
 
         return `
-            <h2 style="margin-bottom: 1.5rem;">Checkout</h2>
+            <h2 style="margin-bottom:1.5rem">Checkout</h2>
             <form class="checkout-form" onsubmit="CheckoutPage.handleSubmit(event)">
                 <div>
                     <div class="form-group">
@@ -34,7 +32,7 @@ const CheckoutPage = {
                         <label>Card Number *</label>
                         <input type="text" name="cardNumber" required placeholder="1234 5678 9012 3456" pattern="[0-9\s]{13,19}">
                     </div>
-                    <button type="submit" class="btn full-width">Place Order</button>
+                    <button type="submit" class="btn full-width" id="submitBtn">Place Order</button>
                 </div>
                 <div class="order-summary">
                     <h3>Order Summary</h3>
@@ -44,7 +42,7 @@ const CheckoutPage = {
                             <span>$${(item.price * item.quantity).toFixed(2)}</span>
                         </div>
                     `).join('')}
-                    <div class="order-item" style="font-weight: 700; border-top: 2px solid #3b82f6; margin-top: 1rem; padding-top: 1rem;">
+                    <div class="order-item" style="font-weight:700;border-top:2px solid #3b82f6;margin-top:1rem;padding-top:1rem">
                         <span>Total</span>
                         <span>$${total.toFixed(2)}</span>
                     </div>
@@ -54,37 +52,40 @@ const CheckoutPage = {
     },
 
     mount() {
+        this.submitting = false;
         document.getElementById('app').innerHTML = this.render();
     },
 
-    handleSubmit(event) {
+    async handleSubmit(event) {
         event.preventDefault();
+        if (this.submitting) return;
+        this.submitting = true;
+
+        const btn = document.getElementById('submitBtn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Placing order...'; }
 
         const form = event.target;
         const formData = new FormData(form);
 
-        // 生成订单号：时间戳 + 随机4位
-        const orderId = 'ORD-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substr(2, 4).toUpperCase();
-
         const order = {
-            id: orderId,
             name: formData.get('name'),
             email: formData.get('email'),
             address: formData.get('address'),
             items: CartStore.getCart(),
-            total: CartStore.getCartTotal(),
-            date: new Date().toISOString()
+            total: CartStore.getCartTotal()
         };
 
-        // 保存到 sessionStorage 供确认页读取
         try {
-            sessionStorage.setItem('lastOrder', JSON.stringify(order));
+            const result = await OrderAPI.create(order);
+            CartStore.clearCart();
+            // 把 orderId 存到 sessionStorage 供确认页读取
+            sessionStorage.setItem('lastOrderId', result.orderId);
+            Router.goTo('order-confirmation');
         } catch (e) {
-            // sessionStorage 不可用时降级：直接在页面显示
+            this.submitting = false;
+            if (btn) { btn.disabled = false; btn.textContent = 'Place Order'; }
+            alert('Failed to place order. Please try again.');
         }
-
-        CartStore.clearCart();
-        Router.goTo('order-confirmation');
     }
 };
 

@@ -1,7 +1,5 @@
 // API base URL — Phase 3: served from backend
-// Always use relative path /api/ 
-// nginx (或生产环境的反向代理) 负责路由到后端
-const API_BASE = '';
+const API_BASE = 'https://shop-api.huaqloud.com';
 
 // ProductAPI: replaces hardcoded PRODUCTS array
 const ProductAPI = {

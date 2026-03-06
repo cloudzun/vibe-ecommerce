@@ -1,7 +1,5 @@
 // 前端认证工具函数
-// Always use relative path /api/
-// nginx (或生产环境的反向代理) 负责路由到后端
-const AUTH_BASE = '';
+
 
 const AuthService = {
     getToken() {
@@ -50,7 +48,7 @@ const AuthService = {
     },
 
     async register(email, password) {
-        const res = await fetch(`${AUTH_BASE}/api/auth/register`, {
+        const res = await fetch('https://shop-api.huaqloud.com/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
@@ -61,7 +59,7 @@ const AuthService = {
     },
 
     async login(email, password) {
-        const res = await fetch(`${AUTH_BASE}/api/auth/login`, {
+        const res = await fetch('https://shop-api.huaqloud.com/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password }),
@@ -76,7 +74,7 @@ const AuthService = {
 
     async logout() {
         try {
-            await fetch(`${AUTH_BASE}/api/auth/logout`, {
+            await fetch('https://shop-api.huaqloud.com/api/auth/logout', {
                 method: 'POST',
                 credentials: 'include'
             });
@@ -87,7 +85,7 @@ const AuthService = {
     async getOrders() {
         const token = this.getToken();
         if (!token) throw new Error('Not logged in');
-        const res = await fetch(`${AUTH_BASE}/api/users/me/orders`, {
+        const res = await fetch('https://shop-api.huaqloud.com/api/users/me/orders', {
             headers: { 'Authorization': `Bearer ${token}` },
             credentials: 'include'
         });

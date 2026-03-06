@@ -207,28 +207,27 @@ ALTER TABLE orders ADD COLUMN user_id INTEGER REFERENCES users(id);
 
 ---
 
-## Phase 5 — Performance + Security Hardening 🔜
+## Phase 5 — Performance + Security Hardening ✅
 
-**Performance targets**:
+**Delivered** (2026-03-06, commit `8e819e6`):
 
-| Metric | Current | Target |
-|--------|---------|--------|
-| First Contentful Paint | ~800ms | < 500ms |
-| Image load (10 products) | all at once | lazy load |
-| API response time | N/A | < 200ms p95 |
+**Module A — Input Security**:
+- `express-validator` installed; validation chains on all routes
+- POST /api/orders: validates name (1-100), email, address (1-200), items (non-empty array), total (>0)
+- POST /api/auth/register: validates email format + password min 6 chars (replaced manual checks)
+- JSON request body limit: 10kb (prevent large payload attacks)
+- helmet CSP customized: `img-src` allows `https://images.unsplash.com`
+- 422 responses with field-level error messages
 
-**Planned optimizations**:
-- Image lazy loading via `IntersectionObserver`
-- Product API response caching (in-memory, 5-minute TTL)
-- CSS minification (manual or simple build step)
-- `loading="lazy"` on all `<img>` tags
+**Module B — Frontend Performance + Image Fixes**:
+- `loading="lazy"` on all `<img>` tags (products, product-detail, cart)
+- `IntersectionObserver` in products page: images fade in as they enter viewport
+- GET /api/products: in-memory cache (5-minute TTL); category filter bypasses cache
+- 4 wrong product images fixed (USB-C Hub, Webcam HD, Portable SSD, Monitor Stand)
 
-**Security additions**:
-- HTTP security headers (`helmet.js`): CSP, HSTS, X-Frame-Options
-- API rate limiting (`express-rate-limit`)
-- Request size limits (prevent large payload attacks)
-- HTTPS on backend (Let's Encrypt / nginx termination)
-- Dependency audit (`npm audit`) as part of deploy checklist
+**Acceptance results**: 7/7 tasks, all GATE 3+4 checks passed
+
+**Context document**: [`docs/briefs/2026-03-06-phase5-security-performance.md`](briefs/2026-03-06-phase5-security-performance.md)
 
 ---
 

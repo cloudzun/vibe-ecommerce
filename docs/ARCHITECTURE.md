@@ -314,18 +314,71 @@ Order History:
 
 ---
 
+## Phase 5: Security + Performance Layer
+
+### `server/middleware/validate.js` — Input Validation
+
+express-validator schemas for all mutating routes:
+
+```javascript
+validateOrder     // name, email, address, items[], total
+validateRegister  // email, password (min 6)
+handleValidationErrors  // 422 + field-level error array
+```
+
+Applied as middleware chains:
+```javascript
+router.post('/', validateOrder, handleValidationErrors, async (req, res) => { ... })
+router.post('/register', validateRegister, handleValidationErrors, async (req, res) => { ... })
+```
+
+### API Response Caching (`server/routes/products.js`)
+
+In-memory cache for GET /api/products (no-filter):
+
+```javascript
+const cache = { data: null, ts: 0, TTL: 5 * 60 * 1000 };
+// Cache bypassed when ?category= filter is present
+```
+
+### Frontend Lazy Loading (`js/components/products.js`)
+
+`loading="lazy"` on all `<img>` tags. IntersectionObserver adds fade-in animation as product cards enter viewport:
+
+```javascript
+if ('IntersectionObserver' in window) {
+  const observer = new IntersectionObserver(..., { rootMargin: '50px' });
+  // images start opacity:0, transition to 1 on load + intersection
+}
+```
+
+### Security Headers (`server/app.js`)
+
+```javascript
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'img-src': ["'self'", 'data:', 'https://images.unsplash.com'],
+    }
+  }
+}));
+app.use(express.json({ limit: '10kb' }));  // prevent large payload attacks
+```
+
+---
+
 ## Known Technical Debt
 
 | Item | Location | Phase to Fix |
 |------|----------|-------------|
-| Cart state is client-only (localStorage) | `js/store.js` | Phase 5+ (server-side cart for logged-in users) |
-| No password reset flow | `server/routes/auth.js` | Phase 5 |
-| No email verification | `server/routes/auth.js` | Phase 5 |
-| No real payment processing | `js/components/checkout.js` | Phase 5+ |
-| No rate limiting on other endpoints | `server/app.js` | Phase 5 |
-| No input sanitization library | `server/routes/` | Phase 5 |
-| iptables rule not persisted via ufw | `/etc/network/if-up.d/` | Phase 5/6 |
-| No unit/integration tests | — | Phase 5+ |
-| Images are external CDN links | SQLite `products` table | Phase 5 |
-| No image lazy loading | `css/styles.css` | Phase 5 |
+| Cart state is client-only (localStorage) | `js/store.js` | Phase 6 |
+| No password reset / account recovery | `server/routes/auth.js` | Phase 6 |
+| No email verification | `server/routes/auth.js` | Phase 6 |
+| No real payment processing | `js/components/checkout.js` | Phase 6+ |
+| accessToken stored in localStorage (XSS risk) | `js/auth.js` | Phase 6 |
+| Rate limiting in-memory only (no Redis) | `server/app.js` | Phase 6 |
+| JWT logout doesn't invalidate token (no blacklist) | `server/routes/auth.js` | Phase 6 |
+| iptables rule not persisted via ufw | `/etc/network/if-up.d/` | Phase 6 |
+| No unit/integration tests | — | Phase 6+ |
 | `server/node_modules/` in git history | git | Accepted debt (can't rewrite history safely) |

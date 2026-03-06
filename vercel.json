@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://shop-api.huaqloud.com/api/$1"
+    }
+  ]
+}

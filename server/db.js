@@ -1,13 +1,22 @@
-const knex = require('knex')({
-  client: 'better-sqlite3',
-  connection: {
-    filename: './data/shop.db'
-  },
-  useNullAsDefault: true
-});
+const isPg = !!process.env.DATABASE_URL;
 
-const fs = require('fs');
-if (!fs.existsSync('./data')) fs.mkdirSync('./data');
+const knexConfig = isPg
+  ? {
+      client: 'pg',
+      connection: process.env.DATABASE_URL,
+    }
+  : {
+      client: 'better-sqlite3',
+      connection: { filename: './data/shop.db' },
+      useNullAsDefault: true,
+    };
+
+const knex = require('knex')(knexConfig);
+
+if (!isPg) {
+  const fs = require('fs');
+  if (!fs.existsSync('./data')) fs.mkdirSync('./data');
+}
 
 async function initDb() {
   // Products table

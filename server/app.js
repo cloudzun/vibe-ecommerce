@@ -23,7 +23,8 @@ app.use(cors({
   origin: [
     'https://vibe-ecommerce-seven.vercel.app',
     'http://localhost:8080',
-    'http://localhost:3000'
+    'http://localhost:3000',
+    'http://localhost'
   ],
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],

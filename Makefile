@@ -1,31 +1,34 @@
 .PHONY: up down logs logs-backend reset build ps help
 
+# Auto-detect docker compose command (v2 plugin or v1 standalone)
+DOCKER_COMPOSE := $(shell docker compose version > /dev/null 2>&1 && echo "docker compose" || echo "docker-compose")
+
 up:
 	cp -n .env.example .env 2>/dev/null || true
-	docker compose up -d --build
+	$(DOCKER_COMPOSE) up -d --build
 	@echo ""
 	@echo "✅ Started. Open http://localhost:$${FRONTEND_PORT:-80}"
 
 down:
-	docker compose down
+	$(DOCKER_COMPOSE) down
 
 logs:
-	docker compose logs -f
+	$(DOCKER_COMPOSE) logs -f
 
 logs-backend:
-	docker compose logs -f backend
+	$(DOCKER_COMPOSE) logs -f backend
 
 reset:
-	docker compose down -v
-	docker compose up -d --build
+	$(DOCKER_COMPOSE) down -v
+	$(DOCKER_COMPOSE) up -d --build
 	@echo ""
 	@echo "✅ Database reset. Open http://localhost:$${FRONTEND_PORT:-80}"
 
 build:
-	docker compose build
+	$(DOCKER_COMPOSE) build
 
 ps:
-	docker compose ps
+	$(DOCKER_COMPOSE) ps
 
 help:
 	@echo ""
@@ -37,3 +40,4 @@ help:
 	@echo "  make build    - Build images only"
 	@echo "  make ps       - Show container status"
 	@echo ""
+	@echo "Using: $(DOCKER_COMPOSE)"

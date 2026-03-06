@@ -10,27 +10,24 @@
 
 ## 这是什么
 
-这是 [OpenCode Labs LAB-14](https://github.com/cloudzun/opencode-labs/blob/main/LAB-14-capstone-project.md) 毕业项目的参考实现。
+一个电商 SPA 的完整演进记录——从 Vibe Coding 原型到生产级全栈应用，六个阶段，每个阶段回答一个真实的工程问题。
 
-项目本身是一个电商 SPA，但重点不是电商功能本身，而是**完整记录了一个产品从 Vibe Coding 原型到生产级应用的六阶段演进过程**——每个阶段的架构决策、质量门控、技术债权衡都有据可查。
+重点不是电商功能本身，而是**每个阶段的架构决策、质量门控、技术债权衡**——这些都有据可查。
 
-如果你正在学习 LAB-14，这个仓库可以帮你：
-- 理解每个阶段「上下文文档」应该写到什么程度
-- 看到真实的 7-Gate 质量流程是如何执行的
-- 参考各阶段的技术选型和决策理由
+> 本项目也是 [OpenCode Labs](https://github.com/cloudzun/opencode-labs) 课程体系的配套参考实现，但可以独立阅读和使用。
 
 ---
 
 ## 演进历程
 
-| 阶段 | 状态 | 核心内容 | 对应 LAB |
-|------|------|----------|---------|
-| Phase 1 | ✅ | Vibe Coding 原型，40 分钟，927 行，完整购物流程 | LAB-06 |
-| Phase 2 | ✅ | 前端迭代：搜索、排序、商品详情、订单确认 | LAB-03 |
-| Phase 3 | ✅ | 后端 API：Node.js + Express + SQLite，上线至 Azure | LAB-03 |
-| Phase 4 | ✅ | 用户认证：JWT 双 Token + bcrypt，订单历史 | LAB-03/09 |
-| Phase 5 | ✅ | 安全加固 + 性能优化：输入校验、懒加载、API 缓存 | LAB-10/11 |
-| Phase 6 | ✅ | Docker 三容器本地开发环境：nginx + Node.js + PostgreSQL | LAB-13 |
+| 阶段 | 状态 | 核心问题 | 答案 |
+|------|------|----------|------|
+| Phase 1 | ✅ | AI 能多快生成可用原型？ | 927 行，完整购物流程，能跑 |
+| Phase 2 | ✅ | 如何在 AI 代码上做有质量的迭代？ | 7-Gate 流程 |
+| Phase 3 | ✅ | 如何引入后端而不破坏前端？ | 向后兼容设计 + Knex 抽象层 |
+| Phase 4 | ✅ | 如何在 AI 协作中保持架构师控制权？ | 清晰的角色边界 + 约束头部 |
+| Phase 5 | ✅ | 如何硬化安全而不降低性能？ | express-validator + 缓存 + lazy load |
+| Phase 6 | ✅ | 如何让任何人都能一键复现？ | Docker 三容器 + nginx sub_filter + 双模式 |
 
 ---
 

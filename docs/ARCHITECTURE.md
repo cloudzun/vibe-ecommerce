@@ -8,7 +8,7 @@ Technical deep-dive into vibe-ecommerce's design decisions, module responsibilit
 
 A full-stack single-page application (SPA) with two runtime environments:
 
-### 生产环境（Production）
+### Production
 Frontend on Vercel, backend on Azure Linux server with SQLite.
 
 ```
@@ -29,8 +29,8 @@ Browser → https://shop-api.huaqloud.com (NPM Docker, port 443)
         → SQLite (server/data/shop.db)
 ```
 
-### 本地开发环境（Docker Compose）
-三容器架构，一键启动，PostgreSQL 数据库。
+### Local Development (Docker Compose)
+Three-container setup, one-command start, PostgreSQL database.
 
 ```
 Browser → http://localhost (port 80)
@@ -41,11 +41,11 @@ Browser → http://localhost (port 80)
                                → PostgreSQL (db container, port 5432)
 ```
 
-**双模式切换**（`server/db.js`）:
+**Dual-mode switching** (`server/db.js`):
 ```javascript
 const isPg = !!process.env.DATABASE_URL;
-// DATABASE_URL 存在 → PostgreSQL（Docker）
-// DATABASE_URL 不存在 → SQLite（生产/本地无 Docker）
+// DATABASE_URL set   → PostgreSQL (Docker)
+// DATABASE_URL unset → SQLite (production / no Docker)
 ```
 
 ---
@@ -390,49 +390,55 @@ app.use(express.json({ limit: '10kb' }));  // prevent large payload attacks
 
 ---
 
-## Phase 6: Docker 三容器架构
+## Phase 6: Docker Three-Container Architecture
 
-### `docker-compose.yml` — 服务编排
+### `docker-compose.yml` — Service Orchestration
 
-三个服务通过 `vibe-network` 内部通信，只有 frontend 暴露端口到宿主机：
+Three services communicate via `vibe-network` (internal bridge). Only `frontend` exposes a port to the host:
 
 ```yaml
 services:
-  db:       postgres:16-alpine  # 仅容器内可访问
-  backend:  node:22-alpine      # 仅容器内可访问（通过 nginx 代理）
-  frontend: nginx:alpine        # 暴露 ${FRONTEND_PORT:-80}:80
+  db:       postgres:16-alpine  # internal only
+  backend:  node:22-alpine      # internal only (accessed via nginx proxy)
+  frontend: nginx:alpine        # exposes ${FRONTEND_PORT:-80}:80
 ```
 
-`db` 服务配置 healthcheck，`backend` 使用 `depends_on: db: condition: service_healthy`，确保数据库就绪后再启动后端。
+`db` has a healthcheck (`pg_isready`). `backend` uses `depends_on: db: condition: service_healthy` to guarantee DB is ready before the API starts.
 
-### `docker/frontend/nginx.conf` — 反向代理
+### `docker/frontend/nginx.conf` — Reverse Proxy
 
 ```nginx
-location /api/ { proxy_pass http://backend:3001; }  # API 代理
-location /      { try_files $uri $uri/ /index.html; }  # SPA fallback
+location ~* \.js$ {
+    sub_filter 'https://shop-api.huaqloud.com' '';  # rewrite API base in JS
+    sub_filter_once off;
+}
+location /api/ { proxy_pass http://backend:3001; }  # proxy to backend container
+location /     { try_files $uri $uri/ /index.html; } # SPA fallback
 ```
 
-容器名 `backend` 在 Docker network 内自动解析为 IP，无需硬编码。
+The `sub_filter` directive rewrites the production API URL in JS files at serve time, so all `/api/*` requests are handled by the nginx proxy → backend container. The source JS files are never modified.
 
-### `Makefile` — 学员操作入口
+### `Makefile` — Developer Interface
 
 ```bash
 make up     # cp .env.example .env (if not exists) + docker compose up -d --build
 make down   # docker compose down
-make reset  # docker compose down -v + up（清空 volume，重新 seed）
+make reset  # docker compose down -v + up (wipe volume, re-seed)
 make logs   # docker compose logs -f
 make ps     # docker compose ps
 ```
 
-### 环境变量（`.env.example`）
+Makefile auto-detects `docker compose` (v2 plugin) vs `docker-compose` (v1 standalone).
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `POSTGRES_DB` | `vibe_shop` | 数据库名 |
-| `POSTGRES_USER` | `vibe` | 数据库用户 |
-| `POSTGRES_PASSWORD` | `vibepass` | 数据库密码 |
-| `JWT_SECRET` | `local-dev-secret-...` | JWT 签名密钥（生产必须修改）|
-| `FRONTEND_PORT` | `80` | 前端暴露端口（冲突时改为 8081 等）|
+### Environment Variables (`.env.example`)
+
+| Variable | Default | Notes |
+|----------|---------|-------|
+| `POSTGRES_DB` | `vibe_shop` | Database name |
+| `POSTGRES_USER` | `vibe` | Database user |
+| `POSTGRES_PASSWORD` | `vibepass` | Database password |
+| `JWT_SECRET` | `local-dev-secret-...` | Must be changed in production |
+| `FRONTEND_PORT` | `80` | Override if port 80 is occupied (e.g. `8081`) |
 
 ---
 
@@ -440,12 +446,12 @@ make ps     # docker compose ps
 
 | Item | Location | Notes |
 |------|----------|-------|
-| Cart state is client-only (localStorage) | `js/store.js` | 演示项目可接受 |
-| No password reset / account recovery | `server/routes/auth.js` | 需要邮件服务 |
-| No email verification | `server/routes/auth.js` | 需要邮件服务 |
-| No real payment processing | `js/components/checkout.js` | 演示项目可接受 |
-| accessToken stored in localStorage (XSS risk) | `js/auth.js` | 演示项目可接受 |
-| Rate limiting in-memory only (no Redis) | `server/app.js` | 单进程够用 |
-| JWT logout doesn't invalidate token (no blacklist) | `server/routes/auth.js` | 15min 自动过期 |
-| No unit/integration tests | — | 手动验收覆盖关键路径 |
+| Cart state is client-only (localStorage) | `js/store.js` | Acceptable for demo |
+| No password reset / account recovery | `server/routes/auth.js` | Requires email service |
+| No email verification | `server/routes/auth.js` | Requires email service |
+| No real payment processing | `js/components/checkout.js` | Acceptable for demo |
+| accessToken stored in localStorage (XSS risk) | `js/auth.js` | Acceptable for demo |
+| Rate limiting in-memory only (no Redis) | `server/app.js` | Fine for single process |
+| JWT logout doesn't invalidate token (no blacklist) | `server/routes/auth.js` | 15min auto-expiry mitigates |
+| No unit/integration tests | — | Manual acceptance covers critical paths |
 | `server/node_modules/` in git history | git | Accepted debt |

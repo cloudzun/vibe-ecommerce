@@ -1,265 +1,150 @@
 # vibe-ecommerce
 
-> A progressive e-commerce SPA built with vanilla JavaScript, evolving from a Vibe Coding prototype to a full-stack production app — documented at every step.
+> LAB-14 毕业项目参考实现 — 一个从 Vibe Coding 原型演进到生产级全栈应用的完整工程案例
 
-**Live Demo**: https://vibe-ecommerce-seven.vercel.app  
-**API**: https://shop-api.huaqloud.com/api/products  
-**Blog Series**: https://blog.huaqloud.com/tags/vibe-coding/
-
----
-
-## What This Project Is
-
-This is not just an e-commerce app. It's a **documented engineering journey** — from a 40-minute AI-generated prototype to a production-ready full-stack application, following the [LAB-14 Capstone framework](https://github.com/cloudzun/opencode-labs/blob/main/LAB-14-capstone-project.md).
-
-Every architectural decision, quality gate, and iteration is recorded. The goal is to show how AI-assisted development (OpenCode + Superpowers) can be done with engineering discipline, not just speed.
+[![Live Demo](https://img.shields.io/badge/Demo-在线预览-blue)](https://vibe-ecommerce-seven.vercel.app)
+[![API](https://img.shields.io/badge/API-生产环境-green)](https://shop-api.huaqloud.com/health)
+[![Blog](https://img.shields.io/badge/Blog-系列文章-orange)](https://blog.huaqloud.com/tags/vibe-coding/)
 
 ---
 
-## Current Status
+## 这是什么
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| Phase 1 | ✅ Complete | Vibe Coding prototype — 927 lines, full shopping flow |
-| Phase 2 | ✅ Complete | Frontend polish — search, sort, card navigation, order confirmation |
-| Phase 3 | ✅ Complete | Backend API — Node.js + Express + SQLite, live at shop-api.huaqloud.com |
-| Phase 4 | ✅ Complete | User auth — JWT, register/login, order history |
-| Phase 5 | ✅ Complete | Security hardening + performance — input validation, lazy loading, API cache |
-| Phase 6 | ✅ Complete | Docker 三容器本地开发环境（nginx + node + postgres）|
+这是 [OpenCode Labs LAB-14](https://github.com/cloudzun/opencode-labs/blob/main/LAB-14-capstone-project.md) 毕业项目的参考实现。
 
----
+项目本身是一个电商 SPA，但重点不是电商功能本身，而是**完整记录了一个产品从 40 分钟原型到生产级应用的演进过程**——每个阶段的架构决策、质量门控、技术债权衡都有据可查。
 
-## Quick Start
-
-### 方式一：Docker（推荐，三容器完整环境）
-
-**前置条件**：安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)（Mac/Windows）或 Docker Engine（Linux）
-
-```bash
-# 1. 克隆项目
-git clone https://github.com/cloudzun/vibe-ecommerce.git
-cd vibe-ecommerce
-
-# 2. 一键启动（首次运行会自动构建镜像，约 1-2 分钟）
-make up
-
-# 3. 打开浏览器
-open http://localhost
-```
-
-启动后你将看到：
-```
-✅ Started. Open http://localhost
-```
-
-三个容器会自动启动：
-- **frontend**（nginx）— 静态文件服务 + API 代理，访问 http://localhost
-- **backend**（Node.js）— Express API，容器内部端口 3001
-- **db**（PostgreSQL 16）— 数据库，自动初始化表结构和种子数据
-
-**常用命令**：
-```bash
-make up          # 启动所有容器
-make down        # 停止所有容器
-make logs        # 查看实时日志
-make logs-backend  # 只看后端日志
-make reset       # 清空数据库，重新初始化（演示重置用）
-make ps          # 查看容器状态
-make help        # 查看所有命令
-```
-
-**端口冲突？** 如果 80 端口被占用，在项目根目录创建 `.env` 文件：
-```bash
-echo "FRONTEND_PORT=8081" > .env
-make up
-# 然后访问 http://localhost:8081
-```
+如果你正在学习 LAB-14，这个仓库可以帮你：
+- 理解每个阶段「上下文文档」应该写到什么程度
+- 看到真实的 7-Gate 质量流程是如何执行的
+- 参考各阶段的技术选型和决策理由
 
 ---
 
-### 方式二：仅前端（无需后端，连接线上 API）
+## 演进历程
+
+| 阶段 | 状态 | 核心内容 | 对应 LAB |
+|------|------|----------|---------|
+| Phase 1 | ✅ | Vibe Coding 原型，40 分钟，927 行，完整购物流程 | LAB-06 |
+| Phase 2 | ✅ | 前端迭代：搜索、排序、商品详情、订单确认 | LAB-03 |
+| Phase 3 | ✅ | 后端 API：Node.js + Express + SQLite，上线至 Azure | LAB-03 |
+| Phase 4 | ✅ | 用户认证：JWT 双 Token + bcrypt，订单历史 | LAB-03/09 |
+| Phase 5 | ✅ | 安全加固 + 性能优化：输入校验、懒加载、API 缓存 | LAB-10/11 |
+| Phase 6 | ✅ | Docker 三容器本地开发环境：nginx + Node.js + PostgreSQL | LAB-13 |
+
+---
+
+## 快速开始
+
+### 方式一：Docker（推荐）
+
+**前提**：已安装 [Docker Desktop](https://www.docker.com/products/docker-desktop/)（Mac/Windows）或 Docker Engine（Linux）
 
 ```bash
 git clone https://github.com/cloudzun/vibe-ecommerce.git
 cd vibe-ecommerce
+make up
+```
 
-# Python
+启动后访问 http://localhost，三个容器自动就绪：前端（nginx）、后端（Node.js）、数据库（PostgreSQL）。
+
+```bash
+make down     # 停止
+make reset    # 清空数据库重新初始化
+make logs     # 查看日志
+make help     # 所有命令
+```
+
+> **端口冲突？** 在项目根目录创建 `.env` 文件，加一行 `FRONTEND_PORT=8081`，再运行 `make up`。
+
+### 方式二：仅前端
+
+无需后端，前端直接连接线上生产 API：
+
+```bash
+git clone https://github.com/cloudzun/vibe-ecommerce.git
+cd vibe-ecommerce
 python3 -m http.server 8080
-
-# 或 Node.js
-npx serve .
+# 或：npx serve .
 ```
 
-打开 http://localhost:8080 — 前端自动连接线上 API `https://shop-api.huaqloud.com`。
+访问 http://localhost:8080
 
----
-
-### 方式三：本地后端（无 Docker，SQLite）
+### 方式三：本地后端（无 Docker）
 
 ```bash
 git clone https://github.com/cloudzun/vibe-ecommerce.git
 cd vibe-ecommerce/server
 npm install
-node app.js   # 启动在 3001 端口
-```
+node app.js        # 后端启动在 3001 端口
 
-同时在另一个终端启动前端：
-```bash
-cd vibe-ecommerce
-python3 -m http.server 8080
-```
-
----
-
-## Tech Stack
-
-### Frontend
-| Layer | Technology | Reason |
-|-------|-----------|--------|
-| UI | Vanilla HTML/CSS/JS | No build tools, maximum simplicity |
-| Routing | Hash-based SPA (`#products`, `#cart`, etc.) | Works without a server |
-| State | `js/store.js` + localStorage | Persistent cart, zero backend |
-| Auth | JWT (localStorage) + httpOnly cookie | Phase 4 addition |
-| Images | Unsplash CDN + `loading="lazy"` | Real photos, lazy-loaded |
-| Deployment | Vercel | Static hosting, automatic deploys |
-
-### Backend
-| Layer | Technology | Reason |
-|-------|-----------|--------|
-| Runtime | Node.js v22 | Same language as frontend |
-| Framework | Express.js | Lightweight, well-known |
-| Database | SQLite (prod) / PostgreSQL (Docker) | Knex abstracts dialect — zero code change |
-| Query builder | Knex.js | Dialect-agnostic queries |
-| Auth | JWT (jsonwebtoken) + bcrypt | Industry standard |
-| Validation | express-validator | Declarative, field-level errors |
-| Security | helmet + CORS + rate-limit | Defense in depth |
-| Process | pm2 + systemd | Auto-restart, log management |
-| Proxy | Nginx Proxy Manager (Docker) | SSL termination, subdomain routing |
-| Deployment | Azure Linux VM | Full control, persistent storage |
-
-### Docker（本地开发）
-| Container | Image | Role |
-|-----------|-------|------|
-| frontend | nginx:alpine | 静态文件服务 + `/api/*` 反向代理 |
-| backend | node:22-alpine | Express API |
-| db | postgres:16-alpine | 数据库，volume 持久化 |
-
----
-
-## Project Structure
-
-```
-vibe-ecommerce/
-├── index.html                    # Entry point, loads all scripts
-├── css/
-│   └── styles.css                # All styles (responsive, no framework)
-├── js/
-│   ├── auth.js                   # AuthService — token lifecycle, login/logout
-│   ├── data.js                   # API clients (ProductAPI, OrderAPI)
-│   ├── store.js                  # Cart state + localStorage persistence
-│   ├── router.js                 # Hash-based SPA router
-│   ├── utils.js                  # escapeHtml() and shared utilities
-│   ├── app.js                    # App initialization
-│   └── components/
-│       ├── header.js             # Nav bar with cart badge + auth state
-│       ├── products.js           # Product listing — search/sort/filter + lazy load
-│       ├── product-detail.js     # Single product view + add to cart
-│       ├── cart.js               # Cart management
-│       ├── checkout.js           # Checkout form + order submission
-│       ├── order-confirmation.js # Post-checkout confirmation page
-│       ├── login.js              # #login page
-│       ├── register.js           # #register page (auto-login after register)
-│       └── account.js            # #account — order history
-├── server/
-│   ├── app.js                    # Express entry point (helmet, CORS, routes)
-│   ├── db.js                     # Knex init — SQLite or PostgreSQL via DATABASE_URL
-│   ├── ecosystem.config.js       # pm2 config (JWT_SECRET env var)
-│   ├── middleware/
-│   │   ├── auth.js               # JWT verifyToken middleware
-│   │   └── validate.js           # express-validator schemas (order, register)
-│   ├── routes/
-│   │   ├── products.js           # GET /api/products, GET /api/products/:id
-│   │   ├── orders.js             # POST /api/orders, GET /api/orders/:id
-│   │   ├── auth.js               # register / login / refresh / logout
-│   │   └── users.js              # GET /api/users/me/orders
-│   ├── migrations/
-│   │   └── fix-product-images.js # Idempotent image URL migration (Phase 5)
-│   └── data/
-│       └── shop.db               # SQLite database (production only)
-├── docker/
-│   ├── backend/
-│   │   └── Dockerfile            # node:22-alpine
-│   └── frontend/
-│       ├── Dockerfile            # nginx:alpine
-│       └── nginx.conf            # 静态文件 + /api/* 代理
-├── docker-compose.yml            # 三容器编排
-├── .env.example                  # 环境变量模板（复制为 .env 使用）
-├── Makefile                      # 学员操作入口
-└── docs/
-    ├── ARCHITECTURE.md           # Technical deep-dive
-    ├── ROADMAP.md                # Evolution plan (all phases)
-    ├── CONTRIBUTING.md           # Workflow, code standards, OpenCode prompt template
-    ├── briefs/                   # Context documents (one per phase)
-    ├── plans/                    # Implementation plans (one per phase)
-    └── retrospectives/           # Phase retrospectives
+# 另开终端
+cd ..
+python3 -m http.server 8080   # 前端
 ```
 
 ---
 
-## API Endpoints
+## 技术栈
 
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/products` | — | List products (filter/sort/search) |
-| GET | `/api/products/:id` | — | Single product |
-| POST | `/api/orders` | Optional | Submit order |
-| GET | `/api/orders/:id` | — | Order details |
-| POST | `/api/auth/register` | — | Create account |
-| POST | `/api/auth/login` | — | Login → access token + refresh cookie |
-| POST | `/api/auth/refresh` | Cookie | Renew access token |
-| POST | `/api/auth/logout` | — | Clear refresh cookie |
-| GET | `/api/users/me/orders` | Bearer | Authenticated user's orders |
-
-**Production Base URL**: `https://shop-api.huaqloud.com`  
-**Docker Local URL**: `http://localhost/api/...`
+| 层 | 技术 | 说明 |
+|----|------|------|
+| 前端 | Vanilla JS + HTML/CSS | 无构建工具，零依赖 |
+| 后端 | Node.js + Express | 轻量，易读 |
+| 数据库 | SQLite（生产）/ PostgreSQL（Docker）| Knex 抽象层，代码零改动切换 |
+| 认证 | JWT + bcrypt | 双 Token（access + refresh） |
+| 安全 | helmet + express-validator + rate-limit | 纵深防御 |
+| 部署 | Vercel（前端）+ Azure Linux VM（后端）| 生产环境 |
+| 容器 | Docker Compose（三容器）| 本地开发 |
 
 ---
 
-## Documentation
+## 项目文档
 
-- **[Architecture](docs/ARCHITECTURE.md)** — Module design, data flow, Docker architecture, technical debt
-- **[Roadmap](docs/ROADMAP.md)** — Full phase-by-phase evolution with decisions and specs
-- **[Contributing](docs/CONTRIBUTING.md)** — 7-Gate workflow, code standards, OpenCode prompt template
-- **[Process](PROCESS.md)** — Architect/Executor role definitions, recovery procedures
-
----
-
-## Blog Series
-
-| Article | Phase | Topic |
-|---------|-------|-------|
-| [Vibe Coding with OpenCode + Superpowers](https://blog.huaqloud.com/posts/2026-03-04-vibe-coding-opencode-superpowers/) | 1 | Build process, Superpowers integration |
-| [Why You Need 7 Quality Gates](https://blog.huaqloud.com/posts/2026-03-04-vibe-coding-qa-gates/) | 1 | QA methodology for AI-assisted dev |
-| [Iteration Series #1: Phase 2](https://blog.huaqloud.com/posts/2026-03-04-vibe-ecommerce-iteration-phase2/) | 2 | Planning framework + frontend polish |
-| [Iteration Series #2: Phase 3](https://blog.huaqloud.com/posts/2026-03-05-vibe-ecommerce-phase3-backend/) | 3 | Backend architecture + tech decisions |
-| [Iteration Series #3: Phase 4](https://blog.huaqloud.com/posts/2026-03-05-vibe-ecommerce-phase4-auth/) | 4 | JWT auth, OpenCode deviation recovery |
-| [Iteration Series #4: Phase 5](https://blog.huaqloud.com/posts/2026-03-06-vibe-ecommerce-phase5-security/) | 5 | Security hardening, performance, image fixes |
+| 文档 | 内容 |
+|------|------|
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构设计、模块说明、数据流、技术债 |
+| [ROADMAP.md](docs/ROADMAP.md) | 各阶段演进计划与决策记录 |
+| [CONTRIBUTING.md](docs/CONTRIBUTING.md) | 7-Gate 工作流、OpenCode 提示词模板 |
+| [PROCESS.md](PROCESS.md) | 架构师 / 执行者角色定义、异常处理 |
+| [docs/briefs/](docs/briefs/) | 各阶段上下文文档（BRIEF） |
+| [docs/plans/](docs/plans/) | 各阶段实现计划 |
+| [docs/retrospectives/](docs/retrospectives/) | 各阶段复盘 |
 
 ---
 
-## Development Workflow
+## 配套博客
 
-This project follows a **7-Gate quality process**. Every phase goes through all gates — no skipping.
+| 文章 | 阶段 |
+|------|------|
+| [Vibe Coding with OpenCode + Superpowers](https://blog.huaqloud.com/posts/2026-03-04-vibe-coding-opencode-superpowers/) | Phase 1 |
+| [为什么需要 7 个质量门控](https://blog.huaqloud.com/posts/2026-03-04-vibe-coding-qa-gates/) | Phase 1 |
+| [迭代系列 #1：Phase 2 前端打磨](https://blog.huaqloud.com/posts/2026-03-04-vibe-ecommerce-iteration-phase2/) | Phase 2 |
+| [迭代系列 #2：Phase 3 后端架构](https://blog.huaqloud.com/posts/2026-03-05-vibe-ecommerce-phase3-backend/) | Phase 3 |
+| [迭代系列 #3：Phase 4 用户认证](https://blog.huaqloud.com/posts/2026-03-05-vibe-ecommerce-phase4-auth/) | Phase 4 |
+| [迭代系列 #4：Phase 5 安全与性能](https://blog.huaqloud.com/posts/2026-03-06-vibe-ecommerce-phase5-security/) | Phase 5 |
+
+---
+
+## 质量流程
+
+每个阶段都经过完整的 7-Gate 验收，不跳过任何一关：
 
 ```
-GATE 0: BRIEF confirmed
-GATE 1: Implementation plan written
-GATE 2: OpenCode executes (Architect monitors)
-GATE 3: Service restart + smoke test
-GATE 4: Functional acceptance (all test cases pass)
-GATE 5: Security checklist
-GATE 6: Documentation updated
-GATE 7: Deployment verified
+GATE 0  确认 BRIEF（目标、约束、验收标准）
+GATE 1  写实现计划（任务分解、验证步骤）
+GATE 2  OpenCode 执行（架构师监控，偏离立即干预）
+GATE 3  服务重启 + 冒烟测试
+GATE 4  功能验收（所有用例通过）
+GATE 5  安全检查清单
+GATE 6  文档更新
+GATE 7  部署验证（生产环境回归）
 ```
 
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full workflow and OpenCode prompt template.
+详见 [CONTRIBUTING.md](docs/CONTRIBUTING.md)。
+
+---
+
+## License
+
+MIT

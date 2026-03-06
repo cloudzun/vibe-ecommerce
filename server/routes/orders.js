@@ -2,9 +2,10 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const { knex } = require('../db');
+const { validateOrder, handleValidationErrors } = require("../middleware/validate");
 
 // POST /api/orders
-router.post('/', async (req, res) => {
+router.post("/", validateOrder, handleValidationErrors, async (req, res) => {
   try {
     const { name, email, address, items, total } = req.body;
 

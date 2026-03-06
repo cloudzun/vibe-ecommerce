@@ -21,7 +21,7 @@ const CartPage = {
                 <h2 style="margin-bottom: 1.5rem;">Shopping Cart</h2>
                 ${cart.map(item => `
                     <div class="cart-item">
-                        <img src="${item.image}" alt="${item.name}">
+                        <img loading="lazy" src="${item.image}" alt="${item.name}">
                         <div>
                             <h3>${item.name}</h3>
                             <p class="price">$${item.price.toFixed(2)}</p>

@@ -9,7 +9,14 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Security headers
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "img-src": ["'self'", "data:", "https://images.unsplash.com"],
+    }
+  }
+}));
 
 // CORS — allow Vercel frontend + local dev, with credentials for cookies
 app.use(cors({
@@ -23,7 +30,7 @@ app.use(cors({
   credentials: true  // required for httpOnly cookie (refresh token)
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
 // Rate limiting on auth endpoints (10 requests / 15 min per IP)

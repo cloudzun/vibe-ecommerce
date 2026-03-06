@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { knex } = require('../db');
+const { validateRegister, handleValidationErrors } = require("../middleware/validate");
 
 const router = express.Router();
 
@@ -28,17 +29,11 @@ function makeTokens(userId, email) {
 }
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', validateRegister, handleValidationErrors, async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({ success: false, error: 'Email and password are required' });
-    }
-    if (!EMAIL_RE.test(email)) {
-      return res.status(400).json({ success: false, error: 'Invalid email format' });
-    }
-    if (password.length < 6) {
-      return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
     }
 
     const existing = await knex('users').where({ email }).first();

@@ -26,7 +26,7 @@ const ProductDetailPage = {
         return `
             <div class="product-detail">
                 <div class="product-image">
-                    <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
+                    <img loading="lazy" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
                 </div>
                 <div class="product-info">
                     <h2>${escapeHtml(product.name)}</h2>

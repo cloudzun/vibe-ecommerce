@@ -1,10 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const { knex } = require('../db');
+const cache = { data: null, ts: 0, TTL: 5 * 60 * 1000 };
 
 // GET /api/products?category=audio&search=head&sort=price_asc
 router.get('/', async (req, res) => {
   try {
+    if (!req.query.category && cache.data && (Date.now() - cache.ts) < cache.TTL) {
+      return res.json({ success: true, data: cache.data });
+    }
     const { category, search, sort } = req.query;
     let query = knex('products');
 
@@ -19,6 +23,7 @@ router.get('/', async (req, res) => {
     else if (sort === 'rating_desc') query = query.orderBy('rating', 'desc');
 
     const products = await query.select();
+    if (!req.query.category) { cache.data = products; cache.ts = Date.now(); }
     res.json({ success: true, data: products });
   } catch (err) {
     console.error(err);

@@ -64,7 +64,7 @@ const ProductsPage = {
             : (product.description || '');
         return `
             <div class="product-card" onclick="Router.goTo('product-detail', {id: ${product.id}})" style="cursor:pointer;">
-                <img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
+                <img loading="lazy" src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}">
                 <div class="product-card-body">
                     <h3>${escapeHtml(product.name)}</h3>
                     <p class="description">${escapeHtml(shortDesc)}</p>
@@ -80,6 +80,16 @@ const ProductsPage = {
 
     mount() {
         this.fetchAndRender();
+        if ("IntersectionObserver" in window) {
+          const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => { if (e.isIntersecting) { e.target.style.opacity = "1"; observer.unobserve(e.target); }});
+          }, { rootMargin: "50px" });
+          document.querySelectorAll(".product-card img").forEach(img => {
+            img.style.opacity = "0"; img.style.transition = "opacity 0.3s";
+            img.addEventListener("load", () => { img.style.opacity = "1"; });
+            observer.observe(img);
+          });
+        }
     },
 
     attachFilterListeners() {

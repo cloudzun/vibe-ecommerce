@@ -141,9 +141,10 @@ Checklist (non-negotiable):
 
 ### GATE 6 — Documentation
 After every phase:
-- [ ] `docs/ROADMAP.md` — phase status updated to ✅, Decision Log updated
-- [ ] `docs/ARCHITECTURE.md` — new modules/flows documented
-- [ ] `README.md` — status table and links updated
+- [ ] `docs/ROADMAP.md` — phase status updated to ✅, Decision Log updated, new modules documented
+- [ ] `docs/ARCHITECTURE.md` — new modules/flows documented, technical debt table updated
+- [ ] `README.md` — status table, tech stack, project structure, API endpoints, blog series all updated
+- [ ] `PROCESS.md` — Last Updated date, any new workflow patterns
 - [ ] Retrospective written: `docs/retrospectives/YYYY-MM-DD-<phase>.md`
 
 ### GATE 7 — Deployment

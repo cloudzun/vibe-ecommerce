@@ -1,7 +1,7 @@
 # PROCESS.md — Architect + OpenCode Workflow
 
-**Last Updated**: 2026-03-05  
-**Status**: Finalized after Phase 4 (OpenCode deviation recovery)
+**Last Updated**: 2026-03-06  
+**Status**: Finalized after Phase 5 (ACP path fix, image validation pattern)
 
 ---
 
@@ -211,15 +211,36 @@ After every phase:
     - Technical debt cleared/updated
     
 [ ] README.md
-    - Status table updated
-    - Links checked
-    
+    - Status table updated (phase ✅)
+    - Tech stack table updated (new dependencies)
+    - Project structure updated (new files/dirs)
+    - API endpoints table updated
+    - Blog series table updated (new article link)
+
+[ ] PROCESS.md
+    - Last Updated date updated
+    - Lessons/patterns added if workflow changed
+
 [ ] docs/retrospectives/YYYY-MM-DD-phase-N.md
     - What went well
     - What went wrong
     - Metrics
     - Lessons learned
 ```
+
+### Known Patterns (Phase 5)
+
+**OpenCode via PTY (not ACP)**  
+`sessions_spawn(runtime="acp")` requires `opencode` in system PATH. If it fails silently, use:
+```bash
+exec pty=true background=true command="export PATH=$HOME/.opencode/bin:$PATH && opencode run '...'"
+```
+
+**Image validation before DB update**  
+Always verify candidate Unsplash photo IDs with:
+1. HTTP 200 check: `curl -s -o /dev/null -w "%{http_code}" https://images.unsplash.com/<photo-id>?w=400`
+2. AI image analysis: `image` tool to confirm content matches product name
+3. Only then pass IDs to OpenCode migration script
 
 ---
 

@@ -1,7 +1,7 @@
 # PROCESS.md — Architect + OpenCode Workflow
 
 **Last Updated**: 2026-03-06  
-**Status**: Finalized after Phase 5 (ACP path fix, image validation pattern)
+**Status**: Finalized after Phase 6 (Docker dual-mode, port conflict pattern)
 
 ---
 
@@ -241,6 +241,17 @@ Always verify candidate Unsplash photo IDs with:
 1. HTTP 200 check: `curl -s -o /dev/null -w "%{http_code}" https://images.unsplash.com/<photo-id>?w=400`
 2. AI image analysis: `image` tool to confirm content matches product name
 3. Only then pass IDs to OpenCode migration script
+
+**Docker port conflict on server**  
+Before assigning a host port in docker-compose.yml, check what's already in use:
+```bash
+ss -tlnp | grep -E ":(80|8080|8081)"
+docker ps --format "{{.Names}} {{.Ports}}" | grep <port>
+```
+Use `${FRONTEND_PORT:-80}` pattern in docker-compose.yml so learners can override via `.env` without editing the compose file.
+
+**docker-compose.yml — no `version` field**  
+Docker Compose v2+ ignores the `version` field and emits a warning. Do not add it to new files.
 
 ---
 

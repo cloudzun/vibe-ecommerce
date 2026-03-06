@@ -231,28 +231,49 @@ ALTER TABLE orders ADD COLUMN user_id INTEGER REFERENCES users(id);
 
 ---
 
-## Phase 6 — SDD-Driven Refactor 🔜
+## Phase 6 — Docker 三容器本地开发环境 ✅
 
-**Trigger condition**: Any of:
-- Codebase exceeds 5,000 lines
-- A new contributor joins
-- Adding a feature requires touching 5+ files
+**Delivered** (2026-03-06, commit `b6d4a03`):
 
-**Approach**: Brownfield SDD (Specification-Driven Development)
+**Goal**: 学员可用 `make up` 一键在本地跑完整三容器应用；生产环境（Azure + SQLite + pm2）完全不受影响。
 
-Four-layer document structure:
+**架构**:
+```
+Docker Compose (本地)
+├── frontend  nginx:alpine        → http://localhost (静态文件 + API 代理)
+├── backend   node:22-alpine      → Express API (port 3001, 仅容器内)
+└── db        postgres:16-alpine  → PostgreSQL (port 5432, 仅容器内)
+```
 
-| Layer | Name | Content |
-|-------|------|---------|
-| L1 | Constitution | System-wide invariants ("all API endpoints require auth except /products") |
-| L2 | Specification | Module-level contracts and data schemas |
-| L3 | Plan | Refactor plan with module boundaries |
-| L4 | Tasks | Concrete file-level task list |
+**双模式设计**:
+- `DATABASE_URL` 存在 → PostgreSQL（Docker 环境）
+- `DATABASE_URL` 不存在 → SQLite（生产/无 Docker 环境）
+- 路由代码零改动，Knex 抽象层保证兼容
 
-**Likely refactor targets**:
-- Extract API client layer (`js/api.js`) — currently fetch() calls scattered in components
-- Separate business logic from rendering in components
-- Standardize error handling across all async operations
+**新增文件**:
+- `docker-compose.yml` — 三服务编排，healthcheck，volume，network
+- `docker/backend/Dockerfile` — node:22-alpine 多层构建
+- `docker/frontend/Dockerfile` — nginx:alpine 静态文件服务
+- `docker/frontend/nginx.conf` — 静态文件 + `/api/*` 代理到 backend
+- `.env.example` — 环境变量模板（含 FRONTEND_PORT 可配置）
+- `Makefile` — up / down / logs / reset / build / ps / help
+
+**修改文件**:
+- `server/db.js` — 加 PostgreSQL 双模式（向后兼容）
+- `server/app.js` — CORS 加 `http://localhost`
+
+**Makefile 命令**:
+```bash
+make up       # 一键启动（自动复制 .env.example → .env）
+make down     # 停止所有容器
+make logs     # 实时日志
+make reset    # 清空数据库重新 seed
+make ps       # 查看容器状态
+```
+
+**验收结果**: GATE 0-7 全部通过，0 vulnerabilities
+
+**Context document**: [`docs/briefs/2026-03-06-phase6-docker.md`](briefs/2026-03-06-phase6-docker.md)
 
 ---
 
